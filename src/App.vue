@@ -1001,9 +1001,9 @@ onMounted(() => {
         </section>
 
         <section v-if="analysis.openColorMatches.length" class="block block-approx">
-          <h2 class="h muted-h">Open Color 近似（ΔE76）</h2>
+          <h2 class="h muted-h">Open Color 近似（ΔE2000）</h2>
           <p class="block-lead">
-            オープンソースの配色セット「Open Color」の名前付き色に、支配色がどれだけ近いかを示します（ΔE が小さいほど近い）。公式の正解色名ではありません。
+            オープンソースの配色セット「Open Color」の名前付き色に、支配色がどれだけ近いかを示します（ΔE2000 が小さいほど近い）。公式の正解色名ではありません。
             <button
               type="button"
               class="glossary-jump"
@@ -1034,7 +1034,7 @@ onMounted(() => {
                 class="linkish"
                 @click="copyText(m.swHex, '近似色 HEX')"
               >
-                {{ m.pct.toFixed(1) }}% {{ m.swatchName }} · ΔE
+                {{ m.pct.toFixed(1) }}% {{ m.swatchName }} · ΔE2000
                 {{ m.deltaE.toFixed(1) }}
               </button>
             </li>
@@ -1042,7 +1042,7 @@ onMounted(() => {
         </section>
 
         <section v-if="analysis.tailwindMatches.length" class="block block-approx">
-          <h2 class="h muted-h">Tailwind 近似（500/600/700 サブセット、ΔE76）</h2>
+          <h2 class="h muted-h">Tailwind 近似（500/600/700 サブセット、ΔE2000）</h2>
           <p class="block-lead">
             Web 向け CSS フレームワーク「Tailwind CSS」の標準色のうち、明るさ 500 / 600 / 700 だけを抜き出して比較しています（フルパレットではありません）。
             <button
@@ -1075,7 +1075,7 @@ onMounted(() => {
                 class="linkish"
                 @click="copyText(m.swHex, '近似色 HEX')"
               >
-                {{ m.pct.toFixed(1) }}% {{ m.swatchName }} · ΔE
+                {{ m.pct.toFixed(1) }}% {{ m.swatchName }} · ΔE2000
                 {{ m.deltaE.toFixed(1) }}
               </button>
             </li>

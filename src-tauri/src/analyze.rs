@@ -284,7 +284,7 @@ fn build_analysis_gist(
     let n = open.len().min(tail.len()).min(3);
     if n > 0 {
         lines.push(GistLineDto {
-            text: "既知パレットとの近さ（色差 ΔE・支配色 1〜3 位）".to_string(),
+            text: "既知パレットとの近さ（色差 ΔE2000・支配色 1〜3 位）".to_string(),
             role: "label".to_string(),
         });
         for i in 0..n {
@@ -292,7 +292,7 @@ fn build_analysis_gist(
             let oc = &open[i];
             lines.push(GistLineDto {
                 text: format!(
-                    "Open Color（支配色 {} 位）: 「{}」が最も近い · ΔE {:.1}",
+                    "Open Color（支配色 {} 位）: 「{}」が最も近い · ΔE2000 {:.1}",
                     rank, oc.swatch_name, oc.delta_e
                 ),
                 role: "body".to_string(),
@@ -300,7 +300,7 @@ fn build_analysis_gist(
             let tw = &tail[i];
             lines.push(GistLineDto {
                 text: format!(
-                    "Tailwind（支配色 {} 位）: 「{}」が最も近い · ΔE {:.1}",
+                    "Tailwind（支配色 {} 位）: 「{}」が最も近い · ΔE2000 {:.1}",
                     rank, tw.swatch_name, tw.delta_e
                 ),
                 role: "body".to_string(),

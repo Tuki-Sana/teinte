@@ -1,6 +1,6 @@
-//! Open Color / Tailwind サブセットへの ΔE 最近傍照合
+//! Open Color / Tailwind サブセットへの ΔE2000 最近傍照合
 
-use crate::color_theory::{delta_e_76, lab_from_srgb, Lab};
+use crate::color_theory::{delta_e_2000, lab_from_srgb, Lab};
 use serde::Deserialize;
 use std::sync::OnceLock;
 
@@ -131,9 +131,9 @@ pub fn tailwind_subset_palette() -> &'static [PaletteSwatchLab] {
 pub fn nearest_in_palette(r: u8, g: u8, b: u8, palette: &[PaletteSwatchLab]) -> (&PaletteSwatchLab, f64) {
     let lab = lab_from_srgb(r, g, b);
     let mut best_sw: &PaletteSwatchLab = &palette[0];
-    let mut best_de = delta_e_76(lab, best_sw.lab);
+    let mut best_de = delta_e_2000(lab, best_sw.lab);
     for sw in &palette[1..] {
-        let de = delta_e_76(lab, sw.lab);
+        let de = delta_e_2000(lab, sw.lab);
         if de < best_de {
             best_de = de;
             best_sw = sw;
@@ -177,6 +177,6 @@ mod tests {
         let p = tailwind_subset_palette();
         let (sw, de) = nearest_in_palette(59, 130, 246, p);
         assert_eq!(sw.name, "blue-500");
-        assert!(de < 0.5);
+        assert!(de < 1.0, "ΔE00 self-match should be tiny, got {}", de);
     }
 }

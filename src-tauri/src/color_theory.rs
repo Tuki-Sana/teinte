@@ -116,11 +116,106 @@ mod lab_inverse {
 #[allow(unused_imports)] // クレート外向け API。ユニットテストは `super::srgb_u8_from_lab` 経由。
 pub use lab_inverse::srgb_u8_from_lab;
 
+/// CIE76（Lab ユークリッド）。パレット照合は [`delta_e_2000`] を使用。比較・検証用に残す。
+#[allow(dead_code)]
 pub fn delta_e_76(a: Lab, b: Lab) -> f64 {
     let dl = a.l - b.l;
     let da = a.a - b.a;
     let db = a.b - b.b;
     (dl * dl + da * da + db * db).sqrt()
+}
+
+/// 色相角 h'（度、0〜360）。a'・b がともにほぼ 0 のときは 0（CIEDE2000 の慣例）。
+fn hue_prime_deg(a_prime: f64, b: f64) -> f64 {
+    if a_prime.abs() < 1e-12 && b.abs() < 1e-12 {
+        return 0.0;
+    }
+    let mut h = b.atan2(a_prime).to_degrees();
+    if h < 0.0 {
+        h += 360.0;
+    }
+    h
+}
+
+/// CIEDE2000 色差（kL = kC = kH = 1）。パレット照合の知覚的近さに使用。
+///
+/// Sharma et al. の補足資料に沿った実装。極端な入力でも NaN を返さないようガードする。
+pub fn delta_e_2000(a: Lab, b: Lab) -> f64 {
+    const RAD: f64 = std::f64::consts::PI / 180.0;
+
+    let l1 = a.l;
+    let l2 = b.l;
+    let a1 = a.a;
+    let a2 = b.a;
+    let b1 = a.b;
+    let b2 = b.b;
+
+    let c1 = (a1 * a1 + b1 * b1).sqrt();
+    let c2 = (a2 * a2 + b2 * b2).sqrt();
+    let c_bar = (c1 + c2) * 0.5;
+
+    let g = 0.5 * (1.0 - (c_bar.powi(7) / (c_bar.powi(7) + 25.0_f64.powi(7))).sqrt());
+
+    let a1p = (1.0 + g) * a1;
+    let a2p = (1.0 + g) * a2;
+
+    let c1p = (a1p * a1p + b1 * b1).sqrt();
+    let c2p = (a2p * a2p + b2 * b2).sqrt();
+
+    let h1p = hue_prime_deg(a1p, b1);
+    let h2p = hue_prime_deg(a2p, b2);
+
+    let dl_p = l2 - l1;
+    let dc_p = c2p - c1p;
+
+    let dh_p = if c1p * c2p < 1e-14 {
+        0.0
+    } else {
+        let mut dh = h2p - h1p;
+        if dh > 180.0 {
+            dh -= 360.0;
+        } else if dh < -180.0 {
+            dh += 360.0;
+        }
+        2.0 * (c1p * c2p).sqrt() * ((dh * 0.5) * RAD).sin()
+    };
+
+    let l_bar = (l1 + l2) * 0.5;
+    let c_bar_p = (c1p + c2p) * 0.5;
+
+    let h_bar_p = if c1p * c2p < 1e-14 {
+        h1p + h2p
+    } else if (h1p - h2p).abs() <= 180.0 {
+        (h1p + h2p) * 0.5
+    } else if h1p + h2p < 360.0 {
+        (h1p + h2p + 360.0) * 0.5
+    } else {
+        (h1p + h2p - 360.0) * 0.5
+    };
+
+    let t = 1.0
+        - 0.17 * ((h_bar_p - 30.0) * RAD).cos()
+        + 0.24 * ((2.0 * h_bar_p) * RAD).cos()
+        + 0.32 * ((3.0 * h_bar_p + 6.0) * RAD).cos()
+        - 0.20 * ((4.0 * h_bar_p - 63.0) * RAD).cos();
+
+    let sl = 1.0 + (0.015 * (l_bar - 50.0).powi(2)) / (20.0 + (l_bar - 50.0).powi(2)).sqrt();
+    let sc = 1.0 + 0.045 * c_bar_p;
+    let sh = 1.0 + 0.015 * c_bar_p * t;
+
+    let delta_theta = 30.0 * (-((h_bar_p - 275.0) / 25.0).powi(2)).exp();
+    let rc = 2.0 * (c_bar_p.powi(7) / (c_bar_p.powi(7) + 25.0_f64.powi(7))).sqrt();
+    let rt = -(rc * ((2.0 * delta_theta) * RAD).sin());
+
+    let kl = 1.0;
+    let kc = 1.0;
+    let kh = 1.0;
+
+    let v1 = dl_p / (kl * sl);
+    let v2 = dc_p / (kc * sc);
+    let v3 = dh_p / (kh * sh);
+
+    (v1 * v1 + v2 * v2 + v3 * v3 + rt * v2 * v3).sqrt()
 }
 
 pub fn relative_luminance(r: u8, g: u8, b: u8) -> f64 {
@@ -161,5 +256,47 @@ mod tests {
         assert!((r2 as i16 - r as i16).abs() <= 2);
         assert!((g2 as i16 - g as i16).abs() <= 2);
         assert!((b2 as i16 - b as i16).abs() <= 2);
+    }
+
+    #[test]
+    fn ciede2000_identical_lab() {
+        let a = Lab {
+            l: 50.0,
+            a: 12.0,
+            b: -30.0,
+        };
+        assert!(delta_e_2000(a, a).abs() < 1e-9);
+    }
+
+    /// Sharma et al. 補足テーブル代表ペア（文献値は実装により小数第 4 位前後で揺れる）。
+    #[test]
+    fn ciede2000_sharma_sample_pair() {
+        let a = Lab {
+            l: 50.0,
+            a: 2.6772,
+            b: -79.7755,
+        };
+        let b = Lab {
+            l: 50.0,
+            a: 0.0,
+            b: -82.7485,
+        };
+        let de = delta_e_2000(a, b);
+        assert!((de - 2.0425).abs() < 0.02, "ΔE00={}", de);
+    }
+
+    #[test]
+    fn delta_e_76_still_defined() {
+        let a = Lab {
+            l: 0.0,
+            a: 0.0,
+            b: 0.0,
+        };
+        let b = Lab {
+            l: 10.0,
+            a: 0.0,
+            b: 0.0,
+        };
+        assert!((delta_e_76(a, b) - 10.0).abs() < 1e-9);
     }
 }
