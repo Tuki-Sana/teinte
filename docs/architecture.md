@@ -85,7 +85,7 @@ sequenceDiagram
 | **LocalStorage** | スポイトパレット（`schemaVersion: 1` の複数カラーセット形式）。Rust は介さない。 |
 | **analysisImport / pickerPaletteImport** | ファイルから読んだ JSON 文字列を、画面用の型にパース（Vitest で検証）。 |
 
-PDF 書き出しは **html2canvas + jsPDF** で DOM を画像化し、生成バイト列を `save_binary_file`（invoke 経由）で保存する流れです。
+PDF 書き出しは **`PdfExportSurface.vue`**（プレビュー・主要色・**Open/Tailwind 近似（ΔE2000）**・gist・調和・WCAG・EXIF など）を **html2canvas + jsPDF** で DOM 画像化し、生成バイト列を `save_binary_file`（invoke 経由）で保存する流れです。
 
 ## Rust ソースモジュール（`src-tauri/src/`）
 

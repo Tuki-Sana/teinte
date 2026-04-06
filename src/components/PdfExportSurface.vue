@@ -15,6 +15,12 @@ function aux(r: number, g: number, b: number): string {
   return formatAuxColor(props.auxMode, r, g, b);
 }
 
+/** 8bit sRGB → #RRGGBB（PDF の支配色列用。`PaletteMatch` に支配側 hex が無いため） */
+function rgbToHex(r: number, g: number, b: number): string {
+  const h = (n: number) => n.toString(16).toUpperCase().padStart(2, "0");
+  return `#${h(r)}${h(g)}${h(b)}`;
+}
+
 const appName = APP_DISPLAY_NAME;
 </script>
 
@@ -65,6 +71,80 @@ const appName = APP_DISPLAY_NAME;
       </table>
     </template>
 
+    <template v-if="analysis.openColorMatches.length">
+      <h2 class="pdf-h2">Open Color 近似（ΔE2000）</h2>
+      <p class="pdf-muted">
+        オープンソース配色セット「Open Color」の名前付き色との距離（CIEDE2000）。公式の正解色名ではありません。
+      </p>
+      <table class="pdf-table pdf-table--match">
+        <thead>
+          <tr>
+            <th>%</th>
+            <th>支配色</th>
+            <th>近似スウォッチ</th>
+            <th>ΔE2000</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(m, i) in analysis.openColorMatches" :key="'oc-' + i">
+            <td>{{ m.pct.toFixed(1) }}</td>
+            <td>
+              <span
+                class="pdf-swatch-inline"
+                :style="{ backgroundColor: `rgb(${m.domR},${m.domG},${m.domB})` }"
+              />
+              <span class="pdf-mono">{{ rgbToHex(m.domR, m.domG, m.domB) }}</span>
+            </td>
+            <td>
+              <span
+                class="pdf-swatch-inline"
+                :style="{ backgroundColor: `rgb(${m.swR},${m.swG},${m.swB})` }"
+              />
+              <span class="pdf-mono">{{ m.swatchName }} · {{ m.swHex }}</span>
+            </td>
+            <td class="pdf-mono">{{ m.deltaE.toFixed(1) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </template>
+
+    <template v-if="analysis.tailwindMatches.length">
+      <h2 class="pdf-h2">Tailwind 近似（500/600/700 サブセット、ΔE2000）</h2>
+      <p class="pdf-muted">
+        Tailwind CSS 標準色のうち明るさ 500 / 600 / 700 のみを比較（フルパレットではありません）。
+      </p>
+      <table class="pdf-table pdf-table--match">
+        <thead>
+          <tr>
+            <th>%</th>
+            <th>支配色</th>
+            <th>近似スウォッチ</th>
+            <th>ΔE2000</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(m, i) in analysis.tailwindMatches" :key="'tw-' + i">
+            <td>{{ m.pct.toFixed(1) }}</td>
+            <td>
+              <span
+                class="pdf-swatch-inline"
+                :style="{ backgroundColor: `rgb(${m.domR},${m.domG},${m.domB})` }"
+              />
+              <span class="pdf-mono">{{ rgbToHex(m.domR, m.domG, m.domB) }}</span>
+            </td>
+            <td>
+              <span
+                class="pdf-swatch-inline"
+                :style="{ backgroundColor: `rgb(${m.swR},${m.swG},${m.swB})` }"
+              />
+              <span class="pdf-mono">{{ m.swatchName }} · {{ m.swHex }}</span>
+            </td>
+            <td class="pdf-mono">{{ m.deltaE.toFixed(1) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </template>
+
     <template v-if="analysis.gist.lines.length">
       <h2 class="pdf-h2">ひと目サマリ</h2>
       <div class="pdf-gist">
@@ -110,7 +190,7 @@ const appName = APP_DISPLAY_NAME;
     </dl>
 
     <p class="pdf-foot">
-      プレビューはアプリ内生成の JPEG です。色彩・調和の説明は参考値であり、公式定義の再現ではありません。
+      プレビューはアプリ内生成の JPEG です。Open Color / Tailwind 近似は CIEDE2000 に基づく参考値です。色彩・調和の説明も参考であり、公式定義の再現ではありません。
     </p>
   </div>
 </template>
@@ -223,6 +303,21 @@ const appName = APP_DISPLAY_NAME;
 .pdf-table th {
   background: #f4f4f6;
   font-weight: 600;
+}
+
+.pdf-table--match td {
+  vertical-align: middle;
+  font-size: 10px;
+}
+
+.pdf-swatch-inline {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  margin-right: 5px;
+  border: 1px solid #999;
+  border-radius: 2px;
+  vertical-align: middle;
 }
 
 .pdf-gist {

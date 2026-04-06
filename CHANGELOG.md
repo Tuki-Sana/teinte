@@ -25,6 +25,7 @@
 - **支配色間引き**: **`DOMINANT_TARGET_SAMPLES` を約 15 万点**に拡大（大画像のサンプル密度向上）
 - **調和テンプレート**: アンカー探索を **15°×24 → 10°×36** に変更（向きの取り違えをやや抑制）
 - **ドキュメント**: [README](README.md) にドキュメント案内と現行の支配色・調和の要点を反映。[architecture.md](docs/architecture.md) に Rust モジュール対応表と CHANGELOG へのリンク。[image-analysis.md](docs/image-analysis.md) の関連ドキュメントを拡充。用語集の**色相調和スコア**を実装（類似色の重み付き合成・10° アンカー）に同期
+- **PDF レポート**: **Open Color / Tailwind 近似**を **ΔE2000** 付きの表で出力。フッター注記を更新。**色相調和スコア**の凡例に計算概要の 1 行を追加（`harmonyScoreLegend.ts`、UI・PDF 共通）
 
 ## [0.1.0] - 初期リリース
 
