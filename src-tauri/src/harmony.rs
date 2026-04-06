@@ -50,26 +50,34 @@ fn score_template(weighted: &[(f64, f64)], ideal_rels: &[f64], sigma_deg: f64) -
     best_global
 }
 
-/// 類似色: すべての色相が狭い範囲に入っている
+/// 類似色: 重み付き円周ベクトルの合成が強いほど高スコア（支配色の面積比を反映）。
+/// 合成長さ / 重み和は 2 色等重み・角 θ のとき cos(θ/2) に一致し、旧実装の弧長閾値に近い段階を維持。
 fn score_analogous(weighted: &[(f64, f64)]) -> f64 {
     if weighted.len() < 2 {
         return 0.0;
     }
-    let hues: Vec<f64> = weighted.iter().map(|(h, _)| *h).collect();
-    let mut max_span = 0.0f64;
-    for i in 0..hues.len() {
-        for j in i + 1..hues.len() {
-            max_span = max_span.max(hue_circ_dist_deg(hues[i], hues[j]));
-        }
+    let w_sum: f64 = weighted.iter().map(|(_, w)| w).sum();
+    if w_sum < 1e-9 {
+        return 0.0;
     }
-    if max_span <= 28.0 {
+    let mut sx = 0.0;
+    let mut sy = 0.0;
+    for &(h, w) in weighted {
+        let r = h.to_radians();
+        sx += w * r.cos();
+        sy += w * r.sin();
+    }
+    let conc = (sx * sx + sy * sy).sqrt() / w_sum;
+    if conc >= 0.970 {
         0.95
-    } else if max_span <= 45.0 {
+    } else if conc >= 0.923 {
         0.75
-    } else if max_span <= 60.0 {
-        0.5
+    } else if conc >= 0.866 {
+        0.50
+    } else if conc >= 0.58 {
+        0.20
     } else {
-        0.2
+        0.12
     }
 }
 
@@ -108,4 +116,32 @@ pub fn harmony_scores(weighted_hues: &[(f64, f64)]) -> Vec<HarmonyScoreDto> {
         s.score = (s.score * 1000.0).round() / 1000.0;
     }
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn analogous_two_hues_respects_weight() {
+        // 主役 0° とノイズ 180°：等重みなら低い、主役に重みを寄せると高い
+        let balanced = vec![(0.0, 50.0), (180.0, 50.0)];
+        let skewed = vec![(0.0, 95.0), (180.0, 5.0)];
+        assert!(
+            score_analogous(&balanced) < score_analogous(&skewed),
+            "expected skewed analogous > balanced"
+        );
+    }
+
+    #[test]
+    fn analogous_same_direction_high() {
+        let w = vec![(10.0, 30.0), (25.0, 70.0)];
+        assert!(score_analogous(&w) >= 0.9);
+    }
+
+    #[test]
+    fn complementary_pair_low_analogous() {
+        let w = vec![(0.0, 50.0), (180.0, 50.0)];
+        assert!(score_analogous(&w) < 0.3);
+    }
 }

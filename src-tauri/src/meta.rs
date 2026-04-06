@@ -14,7 +14,7 @@ use crate::color_theory::{lab_from_srgb, srgb_u8_from_lab, Lab};
 const DOMINANT_TARGET_SAMPLES: u64 = 100_000;
 
 /// Lab 空間 k-means の最大反復回数。
-const KMEANS_MAX_ITER: usize = 24;
+const KMEANS_MAX_ITER: usize = 32;
 
 #[inline]
 fn lab_dist2(l1: f64, a1: f64, b1: f64, l2: f64, a2: f64, b2: f64) -> f64 {

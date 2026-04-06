@@ -20,6 +20,8 @@
 - スポイトパレットの LocalStorage を **v1 スキーマ**（`palettes[]` 等）に変更。旧エントリ配列は自動移行
 - **支配色推定**（`meta::dominant_colors`）: 目標サンプル数に基づく間引き + **Lab 空間の k-means**。代表色は各クラスタの **Lab 重心を sRGB に逆変換**（同一 RGB は割合をマージ）。**初期重心は farthest-first（決定的 k-means++ 貪欲）**。従来の RGB 量子化 `q=28` から変更
 - **Open Color / Tailwind 近似**: 最近傍の距離を **CIEDE2000（ΔE00）** に変更（`delta_e_2000`）。CIE76（`delta_e_76`）は比較用に残す
+- **色相調和・類似色**（`harmony::score_analogous`）: **重み付き円周合成**（支配色の `pct` を反映）。補色対のノイズ支配色に引っ張られにくい
+- **支配色 k-means**: 最大反復 **`KMEANS_MAX_ITER` を 32** に拡大
 
 ## [0.1.0] - 初期リリース
 
