@@ -89,6 +89,13 @@ git push origin v0.2.0
 
 処理の流れとディレクトリ構成は [docs/architecture.md](docs/architecture.md)（Mermaid 図・簡易ツリー）、**解析ロジックの要点**は [docs/image-analysis.md](docs/image-analysis.md) にまとめています。
 
+### フロント（`src/`）の置き場
+
+- **`App.vue`** … ルートの組み立て（ヘッダー・ツールバー・`main` グリッド）と composable の配線。
+- **`src/composables/`** … トースト・画像セッション・スポイトパレット・用語集・補助色モードなど、画面ロジックのまとまり。
+- **`src/components/`** … `AnalysisSidePanel` / `EmptyWorkspace` など領域単位の UI。
+- **`src/styles/analysisWorkspace.css`** … 分析パネル・空ワークスペース向けの共通スタイル（`main.ts` で読み込み）。
+
 ## ドキュメントの読み方
 
 | 文書 | 主な内容 |
