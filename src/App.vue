@@ -12,6 +12,7 @@ import { harmonyScoreLegendLines } from "./constants/harmonyScoreLegend";
 import { buildPdfFromElement } from "./utils/pdfExport";
 import { APP_DISPLAY_NAME } from "./constants/appMeta";
 import { installAppMenu } from "./setupAppMenu";
+import { logAppError } from "./utils/appLog";
 import { parseAnalysisExportJson } from "./utils/analysisImport";
 import {
   mergePickerPalettes,
@@ -43,7 +44,8 @@ async function paletteDangerConfirm(message: string): Promise<boolean> {
         okLabel: "OK",
         cancelLabel: "キャンセル",
       });
-    } catch {
+    } catch (e) {
+      logAppError("paletteDangerConfirm (Tauri confirm)", e);
       return false;
     }
   }

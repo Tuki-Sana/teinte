@@ -1,6 +1,7 @@
 import { Menu, MenuItem, PredefinedMenuItem, Submenu } from "@tauri-apps/api/menu";
 import packageJson from "../package.json";
 import { APP_DISPLAY_NAME } from "./constants/appMeta";
+import { logAppError } from "./utils/appLog";
 
 const APP_NAME = APP_DISPLAY_NAME;
 
@@ -33,7 +34,7 @@ function runMenuHandler(
   onAsyncHandlerError?: InstallAppMenuOptions["onAsyncHandlerError"],
 ): void {
   void Promise.resolve(fn()).catch((err) => {
-    console.error(`[AppMenu] ${menuLabel}`, err);
+    logAppError(`メニュー: ${menuLabel}`, err);
     onAsyncHandlerError?.(menuLabel, err);
   });
 }
