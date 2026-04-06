@@ -48,22 +48,59 @@ fn collect_dominant_samples(
     (points, n)
 }
 
-/// 等間隔にサンプルを選び初期重心にする（決定的）。
-fn kmeans_initial_centroids(
-    points: &[(f64, f64, f64, u8, u8, u8)],
-    k: usize,
-) -> Vec<(f64, f64, f64)> {
+/// Lab 空間で **決定的 farthest-first** 初期化（k-means++ の貪欲版）。
+/// 先頭サンプルを第 1 重心とし、以降は「既存重心までの距離の二乗が最大」の未使用サンプルを順に選ぶ。
+fn kmeans_initial_centroids(points: &[(f64, f64, f64, u8, u8, u8)], k: usize) -> Vec<(f64, f64, f64)> {
     let n = points.len();
     let k = k.min(n).max(1);
     if k == n {
         return points.iter().map(|p| (p.0, p.1, p.2)).collect();
     }
-    (0..k)
-        .map(|j| {
-            let i = j * (n - 1) / (k - 1).max(1);
-            (points[i].0, points[i].1, points[i].2)
-        })
-        .collect()
+
+    let mut centroids = Vec::with_capacity(k);
+    let mut chosen = vec![false; n];
+    let p0 = points[0];
+    centroids.push((p0.0, p0.1, p0.2));
+    chosen[0] = true;
+
+    let mut min_d2: Vec<f64> = (0..n)
+        .map(|i| lab_dist2(points[i].0, points[i].1, points[i].2, p0.0, p0.1, p0.2))
+        .collect();
+
+    for _ in 1..k {
+        let mut pick: Option<usize> = None;
+        let mut best = f64::NEG_INFINITY;
+        for i in 0..n {
+            if chosen[i] {
+                continue;
+            }
+            let d = min_d2[i];
+            match d.partial_cmp(&best).unwrap_or(std::cmp::Ordering::Less) {
+                std::cmp::Ordering::Greater => {
+                    best = d;
+                    pick = Some(i);
+                }
+                std::cmp::Ordering::Equal => {
+                    if pick.map_or(true, |j| i < j) {
+                        pick = Some(i);
+                    }
+                }
+                std::cmp::Ordering::Less => {}
+            }
+        }
+        let idx = pick.unwrap_or_else(|| (0..n).find(|&i| !chosen[i]).expect("k <= n"));
+        chosen[idx] = true;
+        let q = points[idx];
+        centroids.push((q.0, q.1, q.2));
+        for i in 0..n {
+            let d = lab_dist2(points[i].0, points[i].1, points[i].2, q.0, q.1, q.2);
+            if d < min_d2[i] {
+                min_d2[i] = d;
+            }
+        }
+    }
+
+    centroids
 }
 
 /// Lab 距離で k-means。収束後の **Lab 重心**とクラスタ点数を返す（代表色は `color_theory::srgb_u8_from_lab` で sRGB に落とす）。
@@ -283,5 +320,32 @@ mod dominant_tests {
         assert!(d.len() >= 2);
         let sum_pct: f32 = d.iter().take(2).map(|t| t.3).sum();
         assert!(sum_pct > 95.0, "expected ~100% in top two, got {}", sum_pct);
+    }
+
+    #[test]
+    fn three_vertical_stripes_three_dominants() {
+        let w = 60u32;
+        let h = 20u32;
+        let mut img = RgbaImage::new(w, h);
+        for y in 0..h {
+            for x in 0..w {
+                let px = if x < 20 {
+                    Rgba([200, 40, 40, 255])
+                } else if x < 40 {
+                    Rgba([40, 180, 60, 255])
+                } else {
+                    Rgba([50, 60, 200, 255])
+                };
+                img.put_pixel(x, y, px);
+            }
+        }
+        let d = dominant_colors(&img, 3);
+        assert_eq!(d.len(), 3, "expected 3 clusters, got {:?}", d);
+        let sum_pct: f32 = d.iter().map(|t| t.3).sum();
+        assert!(
+            sum_pct > 95.0,
+            "expected ~100% across three stripes, got {}",
+            sum_pct
+        );
     }
 }
