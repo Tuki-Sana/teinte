@@ -71,6 +71,15 @@ const appName = APP_DISPLAY_NAME;
       </table>
     </template>
 
+    <template v-if="analysis.gist.lines.length">
+      <h2 class="pdf-h2">ひと目サマリ</h2>
+      <div class="pdf-gist">
+        <p v-for="(row, i) in analysis.gist.lines" :key="i" class="pdf-gist-line">
+          {{ row.text }}
+        </p>
+      </div>
+    </template>
+
     <template v-if="analysis.openColorMatches.length">
       <h2 class="pdf-h2">Open Color 近似（ΔE2000）</h2>
       <p class="pdf-muted">
@@ -145,13 +154,39 @@ const appName = APP_DISPLAY_NAME;
       </table>
     </template>
 
-    <template v-if="analysis.gist.lines.length">
-      <h2 class="pdf-h2">ひと目サマリ</h2>
-      <div class="pdf-gist">
-        <p v-for="(row, i) in analysis.gist.lines" :key="i" class="pdf-gist-line">
-          {{ row.text }}
-        </p>
-      </div>
+    <template v-if="analysis.wcagDominantPair">
+      <h2 class="pdf-h2">WCAG コントラスト（主要色 1位 vs 2位）</h2>
+      <p class="pdf-mono">
+        コントラスト比 {{ analysis.wcagDominantPair.contrastRatio.toFixed(2) }} :1
+      </p>
+    </template>
+
+    <template v-if="analysis.theory">
+      <h2 class="pdf-h2">色彩理論メモ（PCCS 風・非公式）</h2>
+      <p class="pdf-theory-disclaimer">{{ analysis.theory.disclaimerJa }}</p>
+      <p v-if="analysis.theory.dominantHueSummaryJa" class="pdf-mono pdf-theory-summary">
+        {{ analysis.theory.dominantHueSummaryJa }}
+      </p>
+      <p class="pdf-muted pdf-theory-label">概論との対応（目安）</p>
+      <ul class="pdf-outline-list">
+        <li v-for="(line, i) in analysis.theory.outlineMappingJa" :key="'om-' + i">
+          {{ line }}
+        </li>
+      </ul>
+      <p class="pdf-muted pdf-theory-label">支配色ごとの L*・C*・色相帯・トーン</p>
+      <ul class="pdf-theory-dominant">
+        <li v-for="(t, i) in analysis.theory.dominantDetails" :key="'td-' + i" class="pdf-theory-row">
+          <span class="pdf-swatch-inline pdf-swatch-inline--lg" :style="{ backgroundColor: t.hex }" />
+          <div class="pdf-theory-row-text">
+            <span class="pdf-mono">{{ t.hex }}</span>
+            <span class="pdf-theory-meta">
+              L* {{ t.lStar.toFixed(1) }} · C* {{ t.cStar.toFixed(1) }} · h°
+              {{ t.hDeg.toFixed(0) }}
+            </span>
+            <span>{{ t.hueRegionJa }} · {{ t.pccsStyleToneJa }}</span>
+          </div>
+        </li>
+      </ul>
     </template>
 
     <template v-if="analysis.harmonyScores.length">
@@ -171,13 +206,6 @@ const appName = APP_DISPLAY_NAME;
       </ul>
     </template>
 
-    <template v-if="analysis.wcagDominantPair">
-      <h2 class="pdf-h2">WCAG（主要色 1 位 vs 2 位）</h2>
-      <p class="pdf-mono">
-        コントラスト比 {{ analysis.wcagDominantPair.contrastRatio.toFixed(2) }} :1
-      </p>
-    </template>
-
     <h2 class="pdf-h2">EXIF</h2>
     <template v-if="!analysis.exif.length">
       <p>このファイルからは EXIF を読み取れませんでした。</p>
@@ -190,7 +218,8 @@ const appName = APP_DISPLAY_NAME;
     </dl>
 
     <p class="pdf-foot">
-      プレビューはアプリ内生成の JPEG です。Open Color / Tailwind 近似は CIEDE2000 に基づく参考値です。色彩・調和の説明も参考であり、公式定義の再現ではありません。
+      プレビューはアプリ内生成の JPEG です。Open Color / Tailwind 近似は CIEDE2000
+      に基づく参考値です。色彩理論メモ・調和スコアも参考であり、公式 PCCS や教科書的定義の再現ではありません。
     </p>
   </div>
 </template>
@@ -318,6 +347,81 @@ const appName = APP_DISPLAY_NAME;
   border: 1px solid #999;
   border-radius: 2px;
   vertical-align: middle;
+}
+
+.pdf-swatch-inline--lg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.pdf-theory-disclaimer {
+  margin: 0 0 8px;
+  padding: 6px 8px;
+  font-size: 9.5px;
+  line-height: 1.45;
+  color: #444;
+  background: #fafafa;
+  border: 1px solid #e8e8ec;
+  border-radius: 4px;
+}
+
+.pdf-theory-summary {
+  margin: 0 0 8px;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.pdf-theory-label {
+  margin: 8px 0 4px;
+  font-weight: 600;
+}
+
+.pdf-outline-list {
+  margin: 0 0 6px;
+  padding-left: 1.1rem;
+  font-size: 9.5px;
+  line-height: 1.45;
+  color: #333;
+}
+
+.pdf-outline-list li {
+  margin-bottom: 3px;
+}
+
+.pdf-theory-dominant {
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pdf-theory-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #eee;
+}
+
+.pdf-theory-row:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.pdf-theory-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 9.5px;
+  line-height: 1.4;
+}
+
+.pdf-theory-meta {
+  font-family: ui-monospace, "Cascadia Code", Menlo, monospace;
+  font-size: 9px;
+  color: #444;
 }
 
 .pdf-gist {
