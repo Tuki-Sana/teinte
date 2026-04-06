@@ -4,6 +4,12 @@
 
 ## [Unreleased]
 
+### Documentation
+
+- [README](README.md): 開発時は **`pnpm tauri dev` の WebView** と **`pnpm dev` のブラウザ**で LocalStorage が別（パレット非共有）であること、データ消去の補足（Tauri 開発ウィンドウ側）、README 内の版番号はリリース時にまとめて更新する旨
+- [docs/architecture.md](docs/architecture.md): LocalStorage のキー（`imageMetadataAnalyzer.pickerPalette`）、上記と同様の開発時ストレージ分離、利用者向け詳細は README へ誘導。**外部サーバーなし**の表現を、リモートへの画像送信がないことと **Vite のローカル配信**の区別に整理
+- [docs/image-analysis.md](docs/image-analysis.md): Rust `schema_version` と JSON **`schemaVersion`** の対応、支配色 **`pct`** が間引きサンプル上の割合であること（§3・§7・§8・§11）、冒頭に [architecture.md](docs/architecture.md) へのリンク
+
 ## [0.2.1] - 2026-04-07
 
 パッチ相当。**分析 JSON の `schemaVersion`・パレット LocalStorage スキーマ・利用者向けの主な操作**に変更はありません（フロントの構成整理と UI 微調整・ドキュメントが中心）。
