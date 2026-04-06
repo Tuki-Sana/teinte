@@ -12,9 +12,9 @@
   "app": {
     "windows": [
       {
-        "title": "image-metadata-tool-tauri",
-        "width": 800,
-        "height": 600
+        "title": "Image Data Analyzer",
+        "width": 960,
+        "height": 700
       }
     ],
     "security": {
