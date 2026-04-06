@@ -307,6 +307,16 @@ function gistRowClass(role: string): string {
 
     <section v-if="props.analysis.dominants.length" class="block">
       <h2 class="h">主要色（推定）</h2>
+      <p class="block-lead">
+        間引きとクラスタリングによる推定です。％はサンプル上の目安です。
+        <button
+          type="button"
+          class="glossary-jump"
+          @click="emit('openGlossary', 'dominant-colors')"
+        >
+          用語集
+        </button>
+      </p>
       <ul class="list-dominant">
         <li
           v-for="(d, i) in props.analysis.dominants"
@@ -349,6 +359,16 @@ function gistRowClass(role: string): string {
 
     <section v-if="props.analysis.gist.lines.length" class="block gist-block">
       <h2 class="h">ひと目サマリ</h2>
+      <p class="block-lead">
+        解析の要点を行でまとめたものです。
+        <button
+          type="button"
+          class="glossary-jump"
+          @click="emit('openGlossary', 'gist')"
+        >
+          用語集
+        </button>
+      </p>
       <p
         v-for="(row, i) in props.analysis.gist.lines"
         :key="i"
@@ -453,6 +473,16 @@ function gistRowClass(role: string): string {
 
     <section v-if="props.analysis.wcagDominantPair" class="block">
       <h2 class="h muted-h">WCAG コントラスト（主要色 1位 vs 2位）</h2>
+      <p class="muted small">
+        ％で並べた主要色の 1 位・2 位だけの簡易指標です。
+        <button
+          type="button"
+          class="glossary-jump"
+          @click="emit('openGlossary', 'wcag')"
+        >
+          用語集
+        </button>
+      </p>
       <p class="mono">
         比 {{ props.analysis.wcagDominantPair.contrastRatio.toFixed(2) }} :1
       </p>
@@ -507,7 +537,14 @@ function gistRowClass(role: string): string {
         色相調和スコア（参考・％表示・内部は 0〜1）
       </summary>
       <p class="muted small fold-disclaimer">
-        彩度が十分な支配色の加重に基づく参考値です。公式の調和理論の再現ではありません。詳細はツールバーの「用語集」を参照してください。
+        彩度が十分な支配色の加重に基づく参考値です。公式の調和理論の再現ではありません。
+        <button
+          type="button"
+          class="glossary-jump"
+          @click="emit('openGlossary', 'harmony-score')"
+        >
+          用語集
+        </button>
       </p>
       <ul class="harmony-legend">
         <li v-for="(line, hi) in harmonyScoreLegendLines" :key="hi">
