@@ -45,6 +45,30 @@
 
 macOS の WebView では **`window.confirm` が表示されない**ことがあるため、破壊的操作の確認には **`@tauri-apps/plugin-dialog` の `confirm`** を使っています。ブラウザ単体で `pnpm dev` したときは `window.confirm` にフォールバックします。
 
+## バージョンとリリース
+
+- アプリの版は **`package.json`**・**`src-tauri/tauri.conf.json`**・**`src-tauri/Cargo.toml`** の `version` を **同じ値**に揃えています（現在 **0.2.0**）。
+- 変更内容の一覧は **`CHANGELOG.md`**。
+- リリースでタグを付ける例: `git tag -a v0.2.0 -m "0.2.0"` のあと `git push origin v0.2.0`（リモート名は環境に合わせてください）。
+
+## 技術構成（概要）
+
+| 領域 | 技術 |
+|------|------|
+| UI | Vue 3, TypeScript, Vite |
+| デスクトップシェル | Tauri 2（WebView + Rust） |
+| 画像解析・配色ロジック | Rust（`src-tauri`） |
+| 単体テスト | Vitest（フロントのユーティリティ）、`cargo test`（Rust） |
+
+## CI（GitHub Actions）
+
+`main` ブランチへの **push** と **pull_request** で [`.github/workflows/ci.yml`](.github/workflows/ci.yml) が動きます。
+
+1. **Ubuntu**: `pnpm install` → `pnpm run test` → `pnpm run build` → `src-tauri` で `cargo test`
+2. **Windows**（上記成功後）: フロントビルドのあと `pnpm exec tauri build`（インストーラ／実行ファイルの生成確認）
+
+バッジを README に載せる場合は、リポジトリを GitHub に公開したうえで Actions の URL に合わせて追加してください。
+
 ## 開発
 
 ```bash
