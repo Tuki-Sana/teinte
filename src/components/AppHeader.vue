@@ -34,14 +34,13 @@ defineProps<{ appDisplayName: string }>();
 
 .header-brand {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.85rem;
 }
 
 .header-mark {
   width: 2.5rem;
   height: 2.5rem;
-  margin-top: 0.1rem;
   flex-shrink: 0;
   border-radius: 12px;
   background: conic-gradient(
