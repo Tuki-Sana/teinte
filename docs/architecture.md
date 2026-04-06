@@ -87,6 +87,20 @@ sequenceDiagram
 
 PDF 書き出しは **html2canvas + jsPDF** で DOM を画像化し、生成バイト列を `save_binary_file`（invoke 経由）で保存する流れです。
 
+## Rust ソースモジュール（`src-tauri/src/`）
+
+`invoke` の先で画像解析に関わる Rust ファイルの対応関係です（細部は各ファイルの先頭コメントを参照）。
+
+| ファイル | 役割 |
+|----------|------|
+| `lib.rs` | Tauri エントリ、`invoke` コマンドの登録とディスパッチ |
+| `analyze.rs` | 画像読込、支配色・EXIF・プレビュー、Open/Tailwind 照合、`TheoryBlock`・調和・gist を含む **解析結果 JSON の組み立て** |
+| `meta.rs` | **支配色**（間引き・Lab k-means）、ファイルサイズ・更新日時、EXIF 行の列挙 |
+| `color_theory.rs` | sRGB↔Lab、**CIEDE2000**・CIE76、WCAG コントラスト |
+| `palette_match.rs` | Open Color / Tailwind JSON の読込と **ΔE2000 最近傍** |
+| `theory.rs` | PCCS 風トーン・色相帯・加重平均色相（色彩理論ブロック） |
+| `harmony.rs` | **色相調和スコア**（類似・補色・分割補色・トライアド・テトラード） |
+
 ## 簡易ディレクトリツリー
 
 ビルド成果物（`dist/`, `target/`）や `node_modules/` は省略しています。
@@ -130,5 +144,6 @@ image-metadata-tool-tauri/
 
 ## 関連ドキュメント
 
-- 利用者向けの機能説明・開発コマンド: リポジトリ直下の [README.md](../README.md)
-- 画像解析・支配色・色差・調和スコアなどの**アルゴリズム概要**: [image-analysis.md](./image-analysis.md)
+- 利用者向けの機能説明・用語のやさしい説明・開発コマンド: リポジトリ直下の [README.md](../README.md)
+- 画像解析・支配色・色差（ΔE2000）・調和スコアなどの**アルゴリズム概要**: [image-analysis.md](./image-analysis.md)
+- バージョンごとの変更履歴: リポジトリ直下の [CHANGELOG.md](../CHANGELOG.md)

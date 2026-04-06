@@ -112,5 +112,6 @@
 
 ## 関連ドキュメント
 
-- [architecture.md](./architecture.md) … フロント／Tauri／Rust の役割とディレクトリ
-- [README.md](../README.md) … 利用者向け機能・開発手順・PCCS 風閾値表
+- [architecture.md](./architecture.md) … フロント／Tauri／Rust の役割、フロー図、ディレクトリ、Rust モジュール対応表
+- [README.md](../README.md) … 利用者向け機能・用語のやさしい説明・開発手順・PCCS 風閾値表・ドキュメント案内
+- [CHANGELOG.md](../CHANGELOG.md) … バージョンごとの変更履歴

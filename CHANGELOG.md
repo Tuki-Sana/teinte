@@ -24,6 +24,7 @@
 - **支配色 k-means**: 最大反復 **`KMEANS_MAX_ITER` を 32** に拡大
 - **支配色間引き**: **`DOMINANT_TARGET_SAMPLES` を約 15 万点**に拡大（大画像のサンプル密度向上）
 - **調和テンプレート**: アンカー探索を **15°×24 → 10°×36** に変更（向きの取り違えをやや抑制）
+- **ドキュメント**: [README](README.md) にドキュメント案内と現行の支配色・調和の要点を反映。[architecture.md](docs/architecture.md) に Rust モジュール対応表と CHANGELOG へのリンク。[image-analysis.md](docs/image-analysis.md) の関連ドキュメントを拡充。用語集の**色相調和スコア**を実装（類似色の重み付き合成・10° アンカー）に同期
 
 ## [0.1.0] - 初期リリース
 
