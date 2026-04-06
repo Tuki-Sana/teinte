@@ -93,7 +93,7 @@ git push origin v0.2.0
 
 - **`App.vue`** … ルートの組み立て（ヘッダー・ツールバー・`main` グリッド）と composable の配線。
 - **`src/composables/`** … トースト・画像セッション・スポイトパレット・用語集・補助色モードなど、画面ロジックのまとまり。
-- **`src/components/`** … `AnalysisSidePanel` / `EmptyWorkspace` など領域単位の UI。
+- **`src/components/`** … `AnalysisSidePanel` / `EmptyWorkspace` / `PaletteHomeCard`（ホームのパレット案内）など領域単位の UI。
 - **`src/styles/analysisWorkspace.css`** … 分析パネル・空ワークスペース向けの共通スタイル（`main.ts` で読み込み）。
 
 ## ドキュメントの読み方

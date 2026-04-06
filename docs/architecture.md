@@ -117,7 +117,7 @@ image-metadata-tool-tauri/
 │   ├── main.ts
 │   ├── setupAppMenu.ts    # ネイティブメニュー（Tauri 時）
 │   ├── composables/       # トースト・画像セッション・パレット・用語集など
-│   ├── components/        # AnalysisSidePanel, EmptyWorkspace, GlossaryModal, …
+│   ├── components/        # AnalysisSidePanel, EmptyWorkspace, PaletteHomeCard, …
 │   ├── styles/            # analysisWorkspace.css（パネル共通スタイル）
 │   ├── constants/         # 用語集テキスト、表示名、凡例など
 │   ├── types/             # Analysis 等の共有型
