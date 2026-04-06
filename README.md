@@ -1,89 +1,114 @@
 # Image Data Analyzer（Tauri + Vue）
 
-ブラウザにアップロードせず、手元の画像だけで色やメタデータをざっと調べたいとき用のデスクトップアプリです。解像度・EXIF・支配色、Open Color / Tailwind への近似、WCAG のコントラスト、あわせて **PCCS 風のトーン（非公式の近似）** と **色相の調和スコア（独自の簡易指標）** まで一度に見られます。
+画像を外部サーバーに送らず、ローカルで解像度・EXIF・色やコントラストを確認するためのデスクトップアプリです。支配色や Open Color / Tailwind への近似、WCAG に基づくコントラストに加え、**PCCS 風のトーン分類（非公式の近似）**と**色相の調和スコア（独自の簡易指標）**も表示します。
 
-スポイトで拾った色は **名前付きで最大 48 色／セット**、セットは複数持てます。**JSON の読み書き**でバックアップしたり、別ツールとデータを行き来させたりできます。
+スポイトで取得した色は、**名前付きで最大 48 色／セット**として保存でき、**複数のカラーセット**を切り替えて利用できます。**JSON のエクスポート／インポート**によりバックアップや他ツールとの連携が可能です。
 
-## できること（ざっくり）
+## 主な機能
 
-- プレビューをクリックして、その位置の色（HEX / RGB / HSL）
+- プレビュー上のクリック位置の色（HEX / RGB / HSL）
 - 支配色・近似色・WCAG 支配色ペア・色彩理論ブロック・調和スコア・要約（gist）
-- **スポイトパレット**（メモ名、48 色上限、セット切り替え・複製・削除）
-- **分析 / パレットの JSON** コピー・ファイル保存・ファイルからの読み込み
-- **PDF 書き出し**（画面に近いレイアウトのレポート）
+- **スポイトパレット**（メモ名、48 色上限、セットの切り替え・複製・削除）
+- **分析／パレットの JSON**（コピー、ファイル保存、ファイルからの読み込み）
+- **PDF 書き出し**（画面構成に近いレポート）
 - **用語集**（ヘルプメニュー）
+
+### 画面上の用語（やさしい説明）
+
+README やリポジトリだけを見る人向けに、よく出る語を短くまとめます。定義の細部・注意書きは **起動後のヘルプ → 用語集** に詳しく書いています。
+
+| 用語 | 説明 |
+|------|------|
+| **支配色** | 画像の中の**似た色をいくつかのグループに分け**、それぞれの**代表色**と、画像のうちその色っぽい面積の**目安（割合）**。画面上の見出しは **「主要色（推定）」** です。 |
+| **近似色** | **Open Color** や **Tailwind** の「名前の付いた色」の一覧から、支配色に**いちばん近い色**を探した結果です。近さは色差 **ΔE**（小さいほど近い）で示します。 |
+| **WCAG 支配色ペア** | 支配色の **1 位と 2 位**だけを使って、**コントラスト比**（読みやすさの目安でよく使われる値）を出したものです。実際の画面レイアウト全体の WCAG 判定ではありません。 |
+| **色彩理論ブロック** | **L\*・C\*・色相**や **PCCS 風トーン**など、理論・数値のメモをまとめたブロックです。画面の折りたたみでは **「色彩理論メモ（PCCS 風・非公式）」** と表示されます。JSON では「色彩理論ブロック」と書かれることがあります。 |
+| **調和スコア** | 色相が、**類似・補色・トライアド**などよく使われるパターンに、**どれだけ幾何的に近いか**の参考値（**0〜100%** 表示）。**アプリ独自**の目安で、美しさの点数ではありません。 |
+| **要約（gist）** | 分析結果を**短い行**にまとめたテキスト。日本語のまとめ全文をコピーする操作もあります。 |
 
 ## スポイトパレットとカラーセット
 
-- セットごとに名前（任意）。**新規**で空セット、**複製**でコピー（色の id は新規）、**セット削除**は確認付き。
-- **色をすべて削除**は、今選んでいるセットの中身だけ空にする。セット自体は残る（確認あり）。
-- チップの **×** で 1 色削除（確認あり）。
-- 名前が `パレット 1` のように **`パレット` + 半角スペース + 数字**だけのセットは、削除のあと配列順で `パレット 1`, `2`, … に**振り直し**（`肌パレット` など任意名はそのまま）。
+- 各セットに名前（任意）を付与できます。**新規**で空のセットを追加し、**複製**で現在のセットをコピーします（色の id は新規発行）。**セット削除**は確認ダイアログ付きです。
+- **色をすべて削除**は、選択中のセット内の色のみを消去します。セット自体は残ります（確認あり）。
+- 各色チップの **×** で 1 色削除（確認あり）。
+- セット名が `パレット 1` のように **`パレット` + 半角スペース + 数字**のみの場合、セット削除後に配列順で `パレット 1`, `パレット 2`, … へ**連番を振り直します**。`肌パレット` など任意の名前は変更しません。
 
-## JSON まわり
+## JSON の取り扱い
 
 | 操作 | 内容 |
 |------|------|
-| **パレット JSON（置換）** | 今のセットの色をファイル内容で差し替え。`name` があればセット名も更新。 |
-| **パレット JSON（結合）** | 読み込んだ色を先頭に足して、48 色で切り詰め。 |
-| **分析 JSON** | エクスポート形式に近い JSON から分析状態を復元（プレビュー画像の base64 は省略可）。 |
+| **パレット JSON（置換）** | 現在のセットの色一覧を、ファイルの内容で置き換えます。JSON に `name` があればセット名も更新します。 |
+| **パレット JSON（結合）** | 読み込んだ色を先頭に追加し、48 色を超える分は切り捨てます。 |
+| **分析 JSON** | エクスポート形式に近い JSON から分析状態を復元します（プレビュー画像の base64 は省略可）。 |
 
-パレット JSON は `kind: "pickerPalette"` と `entries`、または `entries` だけの形にも対応。書き出し時、セット名が空でなければルートに `name` が付きます。
+パレット JSON は、`kind: "pickerPalette"` と `entries` を含む形式、または `entries` のみのオブジェクト／配列にも対応します。書き出し時、セット名が空でなければルートに `name` が付与されます。
 
-**ファイル → 読み込み**。画像を開いていないホーム画面からも同じ操作ができます。
+メニューの **ファイル → 読み込み**、または画像未選択時のホーム画面から同様の操作ができます。
 
 ## データの保存場所
 
-スポイトパレットは **LocalStorage**（キー `imageMetadataAnalyzer.pickerPalette`）。
+スポイトパレットはブラウザの **LocalStorage**（キー `imageMetadataAnalyzer.pickerPalette`）に保存されます。
 
-- **v1**: `schemaVersion`, `activePaletteId`, `palettes[]`（各 `id`, `name`, `entries`, `updatedAt`）
-- 昔の「エントリ配列だけ」の形式は、起動時に 1 セットに包んで移行します。
+保存される JSON には **`schemaVersion`** があり、**パレットデータの形（スキーマ）が変わったときだけ**番号が上がります。**アプリ本体のバージョン（0.2.0 など）とは別物**です。いまの形式は **`schemaVersion: 1`** で、ルートに次のフィールドがあります。
 
-アプリやブラウザのデータ消去で消えるので、大事なパレットは **JSON で書き出し**を。
+- `schemaVersion`（数値、現在は `1`）
+- `activePaletteId`
+- `palettes[]`（各要素に `id`, `name`, `entries`, `updatedAt`）
+
+それより古い **「エントリ配列だけ」** の保存データは、起動時に 1 セットへ包んで自動移行します。
+
+アプリやブラウザのデータ消去で失われるため、重要なパレットは **JSON で書き出して保管**してください。
 
 ## 確認ダイアログ
 
-macOS の WebView では **`window.confirm` が出ない**ことがあるので、危ない操作は **`@tauri-apps/plugin-dialog` の `confirm`** を使っています。`pnpm dev` だけのブラウザでは `window.confirm` にフォールバックします。
+macOS の WebView では **`window.confirm` が表示されない**場合があるため、破壊的操作の確認には **`@tauri-apps/plugin-dialog` の `confirm`** を使用しています。`pnpm dev` でブラウザのみ起動した場合は `window.confirm` にフォールバックします。
 
 ## バージョンとリリース
 
-`package.json`・`src-tauri/tauri.conf.json`・`src-tauri/Cargo.toml` の **version は揃えて**あります（いま **0.2.0**）。履歴は **`CHANGELOG.md`**。
+`package.json`・`src-tauri/tauri.conf.json`・`src-tauri/Cargo.toml` の **version は同一の値**に揃えています（現在 **0.2.0**）。変更履歴は **`CHANGELOG.md`** を参照してください。
 
-タグの例: `git tag -a v0.2.0 -m "0.2.0"` → `git push origin v0.2.0`（リモート名は環境に合わせてください）。
+リリース用タグの例:
 
-## 中身の構成
+```bash
+git tag -a v0.2.0 -m "0.2.0"
+git push origin v0.2.0
+```
+
+リモート名は環境に合わせて読み替えてください。
+
+## 技術スタック
 
 | 領域 | 技術 |
 |------|------|
 | UI | Vue 3, TypeScript, Vite |
-| シェル | Tauri 2 |
-| 画像・配色ロジック | Rust（`src-tauri`） |
-| テスト | Vitest（フロント）、`cargo test`（Rust） |
+| デスクトップシェル | Tauri 2 |
+| 画像解析・配色ロジック | Rust（`src-tauri`） |
+| テスト | Vitest（フロントエンド）、`cargo test`（Rust） |
 
-処理の流れやフォルダの役割は [docs/architecture.md](docs/architecture.md)（Mermaid と簡易ツリー）にまとめています。
+処理の流れとディレクトリ構成は [docs/architecture.md](docs/architecture.md)（Mermaid 図・簡易ツリー）にまとめています。
 
-## CI
+## CI（GitHub Actions）
 
-`main` への **push / pull_request** で [`.github/workflows/ci.yml`](.github/workflows/ci.yml) が動きます。
+`main` ブランチへの **push** および **pull_request** で [`.github/workflows/ci.yml`](.github/workflows/ci.yml) が実行されます。
 
-1. **Ubuntu**: フロントの `test`・`build` のあと `src-tauri` で `cargo test`（Linux では Tauri 用に WebKit/GTK 系パッケージを入れています）
-2. **Windows**（上記が通ったあと）: `pnpm exec tauri build` でビルド確認
+1. **Ubuntu**: `pnpm install` → `pnpm run test` → `pnpm run build` → `src-tauri` で `cargo test`（Linux 向けに WebKit／GTK 系のシステムパッケージをインストール）
+2. **Windows**（上記成功後）: `pnpm exec tauri build` によるビルド確認
 
-## 開発コマンド
+## 開発
 
 ```bash
-pnpm tauri dev    # いつもの開発
-pnpm run test     # Vitest
-pnpm run build    # vue-tsc + vite build
+pnpm tauri dev      # 開発用（フロント + Tauri）
+pnpm run test       # Vitest
+pnpm run build      # vue-tsc --noEmit && vite build
 cd src-tauri && cargo test
-pnpm tauri build  # 配布用
+pnpm tauri build    # 配布用ビルド
 ```
 
-エディタは [VS Code](https://code.visualstudio.com/) なら [Vue - Official](https://marketplace.visualstudio.com/items?itemName=Vue.volar)、[Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode)、[rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer) が便利です。
+推奨エディタ: [VS Code](https://code.visualstudio.com/) と [Vue - Official](https://marketplace.visualstudio.com/items?itemName=Vue.volar)、[Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode)、[rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)。
 
 ## PCCS 風トーン（実装メモ）
 
-公式 PCCS ではありません。`src-tauri/src/theory.rs` の `pccs_style_tone` と同じ前提です。
+公式の PCCS ではありません。`src-tauri/src/theory.rs` の `pccs_style_tone` と同じ前提です。
 
 | 条件（目安） | 意味 |
 |--------------|------|
@@ -93,7 +118,7 @@ pnpm tauri build  # 配布用
 | `28 ≤ C* < 38` | やや高彩度 |
 | `C* ≥ 38` | 高彩度寄り |
 
-明度 L* は例として次のように分岐（他条件と組み合わせ）。
+明度 L* は、他条件と組み合わせておおむね次のように分岐します。
 
 - `L* ≥ 76` かつ `C* < 18` → ペール寄り
 - `L* ≥ 72` かつ `28 ≤ C* < 38` → ライト寄り

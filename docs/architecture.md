@@ -2,51 +2,90 @@
 
 Image Data Analyzer の**処理の流れ**と**主要ディレクトリ**だけをまとめたメモです。細部はコードとコメントを参照してください。
 
-## 全体像（データの流れ）
+## Tauri 未経験者向け：このアプリの層
+
+1. **WebView** … ウィンドウの中で **Vue（HTML/CSS/JS）が動く領域**です。見た目・ボタン・状態のほとんどはここです。
+2. **invoke（インボーク）** … フロントから **Rust の関数を名前で呼び出す**仕組みです（いわゆる RPC に近い）。**画像解析・ピクセル取得・ファイルの読み書き（パスが決まったあと）**など、重い処理やネイティブ向け API はここを通ります。
+3. **plugin-dialog** … **OS のファイル選択・保存・確認ダイアログ**を出すための別経路です。`invoke` とは入口が分かれていますが、どちらもフロント（Vue）から呼びます。
+4. **Rust** … WebView の外側で動く **ネイティブコード**。`invoke` の先で実際の計算やディスクアクセスが行われます。
+
+**サーバーはありません。** ブラウザにアップロードするのではなく、**自分の PC 上**で完結します。
+
+## 全体像（コンポーネントと依存）
+
+矢印は **「呼び出す／データが流れる」** の向きです。`palette_match` などは **`lib.rs` から直接 invoke されるのではなく**、`analyze.rs` の解析処理の途中で読み込まれます。
 
 ```mermaid
 flowchart TB
-  subgraph ui["Vue フロント (src/)"]
-    App["App.vue（画面・状態の中心）"]
-    LS["LocalStorage\n(pickerPaletteStorage)"]
-    Parse["analysisImport /\npickerPaletteImport"]
+  subgraph tauri["Tauri アプリ（1 ウィンドウ）"]
+    subgraph web["WebView 内（Vue / TypeScript）"]
+      App["App.vue\n画面・状態の中心"]
+      LS["LocalStorage\nスポイトパレットのみ\nRust は介さない"]
+      Parse["analysisImport /\npickerPaletteImport\nJSON → 画面用の型"]
+    end
+
+    Inv["invoke\nフロント → Rust"]
+    Dlg["plugin-dialog\nファイル選択・保存・確認"]
+
+    subgraph rust["Rust（ネイティブ）"]
+      Cmd["lib.rs\ninvoke の受け口・コマンド登録"]
+      An["analyze.rs\n画像・支配色・EXIF・gist 等\n解析の中心"]
+      Mod["palette_match / theory /\nharmony / color_theory / meta\n※ いずれも analyze から利用"]
+    end
   end
 
-  subgraph shell["Tauri"]
-    WV["WebView"]
-    Inv["invoke（Rust コマンド）"]
-    Dlg["plugin-dialog\n(open / save / confirm)"]
-  end
+  Disk["ディスク上のファイル\n（画像パス・読み書き）"]
 
-  subgraph rust["Rust (src-tauri/src/)"]
-    Cmd["lib.rs（コマンド登録）"]
-    An["analyze.rs（画像・支配色・EXIF 等）"]
-    PM["palette_match / theory /\nharmony / color_theory / meta"]
-  end
-
-  App --> WV
   App --> Inv
   App --> Dlg
   App --> LS
   App --> Parse
   Inv --> Cmd
   Cmd --> An
-  Cmd --> PM
-  Dlg --> FS["(OS ファイルダイアログ)"]
-  Inv --> FS
-  An --> Img["画像ファイル（パス経由）"]
+  An --> Mod
+  An --> Disk
+  Dlg --> OS["OS 標準ダイアログ"]
 ```
 
-### 読み方の補足
+## 典型フロー：画像を開いて解析する（時系列）
+
+上のブロック図の補足として、**よくある 1 操作**だけを順番に示します。
+
+```mermaid
+sequenceDiagram
+  participant U as ユーザー
+  participant App as App.vue（WebView 内）
+  participant Dlg as plugin-dialog
+  participant OS as OS
+  participant Inv as invoke
+  participant Rust as "Rust（lib.rs → analyze.rs）"
+  participant FS as ファイル
+
+  U->>App: 画像を開く操作
+  App->>Dlg: ファイル選択を依頼
+  Dlg->>OS: ダイアログ表示
+  OS-->>Dlg: 選択されたパス
+  Dlg-->>App: パスを返す
+  App->>Inv: analyze_image 等（パスを渡す）
+  Inv->>Rust: Rust 側ハンドラ実行
+  Rust->>FS: 画像を読み込み
+  FS-->>Rust: データ
+  Rust->>Rust: 支配色・EXIF・配色計算など
+  Rust-->>Inv: 解析結果（JSON 相当）
+  Inv-->>App: 結果を JS に返す
+  App->>App: 画面に表示
+```
+
+## 読み方の補足
 
 | 経路 | 役割 |
 |------|------|
 | **invoke** | 画像解析（`analyze_image`）、ピクセル取得（`sample_pixel`）、テキスト／バイナリの読み書き（`read_text_file` 等）を Rust に依頼する。 |
 | **plugin-dialog** | 画像・JSON・PDF のファイル選択・保存、破壊的操作の確認。見た目は OS ネイティブに近い。 |
-| **LocalStorage** | スポイトパレット（複数カラーセット v1）。Rust は介さない。 |
+| **LocalStorage** | スポイトパレット（`schemaVersion: 1` の複数カラーセット形式）。Rust は介さない。 |
 | **analysisImport / pickerPaletteImport** | ファイルから読んだ JSON 文字列を、画面用の型にパース（Vitest で検証）。 |
 
-PDF 書き出しは **html2canvas + jsPDF** で DOM を画像化し、生成バイト列を `save_binary_file` で保存する流れです。
+PDF 書き出しは **html2canvas + jsPDF** で DOM を画像化し、生成バイト列を `save_binary_file`（invoke 経由）で保存する流れです。
 
 ## 簡易ディレクトリツリー
 
