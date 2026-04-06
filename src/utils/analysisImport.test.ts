@@ -4,7 +4,7 @@ import { parseAnalysisExportJson } from "./analysisImport";
 describe("parseAnalysisExportJson", () => {
   it("parses minimal export-like object", () => {
     const text = JSON.stringify({
-      schemaVersion: 1,
+      schemaVersion: 4,
       path: "/tmp/x.png",
       width: 100,
       height: 100,

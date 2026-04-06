@@ -17,6 +17,7 @@
 
 ### Changed
 
+- **分析 JSON `schemaVersion`**: **4** に更新（[`analyze.rs`](src-tauri/src/analyze.rs) の **`ANALYSIS_SCHEMA_VERSION`**）。キー構造は 3 と同じ。CIEDE2000・支配色・調和など**算出意味**が変わった版の目印（旧 JSON のインポートは可能だが再解析で数値が変わることがある）
 - スポイトパレットの LocalStorage を **v1 スキーマ**（`palettes[]` 等）に変更。旧エントリ配列は自動移行
 - **支配色推定**（`meta::dominant_colors`）: 目標サンプル数に基づく間引き + **Lab 空間の k-means**。代表色は各クラスタの **Lab 重心を sRGB に逆変換**（同一 RGB は割合をマージ）。**初期重心は farthest-first（決定的 k-means++ 貪欲）**。従来の RGB 量子化 `q=28` から変更
 - **Open Color / Tailwind 近似**: 最近傍の距離を **CIEDE2000（ΔE00）** に変更（`delta_e_2000`）。CIE76（`delta_e_76`）は比較用に残す

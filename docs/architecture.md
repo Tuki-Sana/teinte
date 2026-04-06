@@ -83,7 +83,7 @@ sequenceDiagram
 | **invoke** | 画像解析（`analyze_image`）、ピクセル取得（`sample_pixel`）、テキスト／バイナリの読み書き（`read_text_file` 等）を Rust に依頼する。 |
 | **plugin-dialog** | 画像・JSON・PDF のファイル選択・保存、破壊的操作の確認。見た目は OS ネイティブに近い。 |
 | **LocalStorage** | スポイトパレット（`schemaVersion: 1` の複数カラーセット形式）。Rust は介さない。 |
-| **analysisImport / pickerPaletteImport** | ファイルから読んだ JSON 文字列を、画面用の型にパース（Vitest で検証）。 |
+| **analysisImport / pickerPaletteImport** | ファイルから読んだ JSON 文字列を、画面用の型にパース（Vitest で検証）。分析 JSON の `schemaVersion` は Rust 側の **`ANALYSIS_SCHEMA_VERSION`（現在 4）** と一致するのが新規エクスポートの目安（旧番号も読み込み可）。 |
 
 PDF 書き出しは **`PdfExportSurface.vue`**（プレビュー・ファイル情報・主要色・gist・**Open/Tailwind 近似（ΔE2000）**・WCAG・**色彩理論メモ（TheoryBlock）**・調和・EXIF）を **html2canvas + jsPDF** で DOM 画像化し、生成バイト列を `save_binary_file`（invoke 経由）で保存する流れです。**セクション順はメイン画面の解析表示に揃えています**（折りたたみは PDF では常に展開した形）。
 

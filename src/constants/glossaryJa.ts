@@ -104,7 +104,7 @@ export const glossaryEntries: readonly GlossaryEntry[] = [
     title: "JSON エクスポートと schemaVersion",
     paragraphs: [
       "「JSON をコピー／保存」で出るデータは、分析結果のスナップショットです。プレビュー用の JPEG base64 はサイズのため省略し、previewJpegBase64Omitted: true と注記が付きます。",
-      "schemaVersion が増えるとフィールドが追加されることがあります。古いバージョンで保存した JSON は新しいアプリで一部欠ける場合があります。",
+      "ルートの schemaVersion は分析 JSON 用です（現在 4）。スポイトパレットの LocalStorage とは別番号です。番号が上がるとフィールド追加や、同じキーでも数値の意味が変わる大きなアルゴリズム更新があったことを示します。古い番号の JSON も読み込み可能な場合がありますが、再解析すると数値が変わることがあります。",
     ],
   },
 ];

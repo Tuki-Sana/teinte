@@ -14,6 +14,12 @@ use crate::theory::{self, TheoryBlock};
 
 const PREVIEW_MAX_SIDE: u32 = 1200;
 
+/// 分析結果 JSON（`Analysis`）のスキーマ版。キー追加や、**同じフィールドでも数値の意味が変わる大きなアルゴリズム変更**のときに上げる。
+///
+/// - **4**（現在）: CIEDE2000 パレット照合、支配色（farthest-first・Lab 重心代表・約 15 万サンプル目標・反復 32 等）、調和スコア（重み付き類似・10° アンカー・テンプレ別 σ）を反映。キー構造は 3 と同じ。
+/// - **3**: 従来の分析 JSON 形式（詳細は CHANGELOG・Git 履歴参照）。
+pub const ANALYSIS_SCHEMA_VERSION: u32 = 4;
+
 #[derive(Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ExifLineDto {
@@ -242,7 +248,7 @@ pub fn analyze_path(path_str: &str) -> Result<Analysis, String> {
     let gist = build_analysis_gist(&theory, &open_color_matches, &tailwind_matches, &harmony_scores);
 
     Ok(Analysis {
-        schema_version: 3,
+        schema_version: ANALYSIS_SCHEMA_VERSION,
         path: path_str.to_string(),
         width,
         height,

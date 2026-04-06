@@ -96,7 +96,9 @@
 
 ## 10. 分析結果のスキーマ版
 
-`Analysis.schema_version` は現在 **`3`**（[`analyze.rs`](../src-tauri/src/analyze.rs)）。フロントの JSON インポートや API 互換の目印です。**LocalStorage のパレット**の `schemaVersion`（別物）とは独立しています。
+`Analysis.schema_version` は現在 **`4`**（[`analyze.rs`](../src-tauri/src/analyze.rs) の **`ANALYSIS_SCHEMA_VERSION`**）。フロントの JSON インポートや API 互換の目印です。**LocalStorage のパレット**の `schemaVersion`（別番号・別ライフサイクル）とは独立しています。
+
+**3 → 4**: フィールド名はそのまま。パレット近似が **ΔE2000**、支配色・調和の**算出式**が更新されたため、同じ画像でも **3 以前に保存した JSON の数値は再解析結果と一致しない**ことがあります。インポート自体は `schemaVersion` に関わらず可能（[`analysisImport.ts`](../src/utils/analysisImport.ts)）。
 
 ---
 
