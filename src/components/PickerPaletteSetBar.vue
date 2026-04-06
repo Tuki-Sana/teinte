@@ -121,10 +121,10 @@ function onNameInput(ev: Event) {
   box-sizing: border-box;
 }
 
-.palette-set-name-input:focus,
-.palette-set-select:focus {
-  outline: 2px solid rgba(59, 130, 246, 0.35);
-  outline-offset: 1px;
+.palette-set-name-input:focus-visible,
+.palette-set-select:focus-visible {
+  outline: 2px solid var(--link, #2563eb);
+  outline-offset: 2px;
 }
 
 .palette-set-actions {
@@ -151,6 +151,11 @@ function onNameInput(ev: Event) {
 .palette-set-btn:hover:not(:disabled) {
   background: #f4f4f8;
   border-color: #a8a8b8;
+}
+
+.palette-set-btn:focus-visible {
+  outline: 2px solid var(--link, #2563eb);
+  outline-offset: 2px;
 }
 
 .palette-set-btn:disabled {

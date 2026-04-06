@@ -30,6 +30,15 @@ import {
 
 const appDisplayName = APP_DISPLAY_NAME;
 
+const previewImgRef = ref<HTMLImageElement | null>(null);
+
+const previewImageAlt = computed(() => {
+  const a = analysis.value;
+  if (!a?.path) return "プレビュー";
+  const base = a.path.split(/[/\\]/).pop();
+  return base ? `プレビュー: ${base}` : "プレビュー";
+});
+
 function isTauriWindow(): boolean {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 }
@@ -294,13 +303,13 @@ function closeImage() {
   error.value = "";
 }
 
-async function onPreviewClick(e: MouseEvent) {
+async function samplePreviewAtClientXY(clientX: number, clientY: number) {
   const a = analysis.value;
-  if (!a) return;
-  const el = e.currentTarget as HTMLImageElement;
+  const el = previewImgRef.value;
+  if (!a || !el) return;
   const rect = el.getBoundingClientRect();
-  const nx = ((e.clientX - rect.left) / rect.width) * el.naturalWidth;
-  const ny = ((e.clientY - rect.top) / rect.height) * el.naturalHeight;
+  const nx = ((clientX - rect.left) / rect.width) * el.naturalWidth;
+  const ny = ((clientY - rect.top) / rect.height) * el.naturalHeight;
   const ox = Math.min(
     a.width - 1,
     Math.max(0, Math.floor((nx / a.previewWidth) * a.width)),
@@ -318,6 +327,19 @@ async function onPreviewClick(e: MouseEvent) {
   } catch {
     picked.value = null;
   }
+}
+
+function onPreviewClick(e: MouseEvent) {
+  void samplePreviewAtClientXY(e.clientX, e.clientY);
+}
+
+function onPreviewImgKeydown(e: KeyboardEvent) {
+  if (e.key !== "Enter" && e.key !== " ") return;
+  e.preventDefault();
+  const el = previewImgRef.value;
+  if (!el) return;
+  const r = el.getBoundingClientRect();
+  void samplePreviewAtClientXY(r.left + r.width / 2, r.top + r.height / 2);
 }
 
 async function copyJson() {
@@ -658,24 +680,19 @@ onMounted(() => {
 
 <template>
   <div class="app">
-    <header class="header">
+    <header class="header" role="banner">
       <div class="header-inner">
         <div class="header-brand">
           <span class="header-mark" aria-hidden="true" />
           <div class="header-titles">
             <h1 class="title">{{ appDisplayName }}</h1>
-            <p class="subtitle">
-              <span class="subtitle-lead"
-                >解像度・EXIF・主要色・パレット近似・色彩メモ・調和の目安</span
-              >
-            </p>
           </div>
         </div>
       </div>
       <div class="header-accent" aria-hidden="true" />
     </header>
 
-    <div class="toolbar">
+    <nav class="toolbar" aria-label="画像の選択とメニュー案内">
       <button
         type="button"
         class="btn btn-primary btn-open"
@@ -687,30 +704,37 @@ onMounted(() => {
       <p class="toolbar-hint">
         閉じる・書き出し・用語集は、<strong>メニュー</strong>の「ファイル」「ヘルプ」から
       </p>
-    </div>
+    </nav>
 
-    <p v-if="error" class="error">{{ error }}</p>
+    <p v-if="error" class="error" role="alert" aria-live="assertive">{{ error }}</p>
 
+    <main id="main-content" class="app-main">
     <div v-if="analysis" class="workspace">
       <div class="main">
         <section
           class="preview-wrap"
           :class="analysis.previewBgDark ? 'canvas-dark' : 'canvas-light'"
+          aria-label="プレビュー"
         >
           <div class="preview-stage">
             <img
+              ref="previewImgRef"
               :src="previewSrc"
               class="preview-img"
-              alt="プレビュー"
+              :alt="previewImageAlt"
+              tabindex="0"
+              aria-describedby="preview-hint"
               @click="onPreviewClick"
+              @keydown="onPreviewImgKeydown"
             />
           </div>
-          <p class="hint">
-            画像をクリックでその位置の色を取得（原画像座標でサンプル）
+          <p id="preview-hint" class="hint">
+            クリック、または画像にフォーカスして Enter / Space
+            でその位置（キーボードは中央）の色を取得（原画像座標でサンプル）
           </p>
         </section>
 
-        <aside class="panel">
+        <aside class="panel" aria-label="分析結果">
         <section class="block">
           <h2 class="h">ファイル</h2>
           <p class="mono path">{{ analysis.path }}</p>
@@ -738,6 +762,7 @@ onMounted(() => {
                 type="button"
                 class="toggle-btn"
                 :class="{ 'toggle-btn--on': colorAuxMode === 'rgb' }"
+                :aria-pressed="colorAuxMode === 'rgb'"
                 @click="colorAuxMode = 'rgb'"
               >
                 RGB
@@ -746,6 +771,7 @@ onMounted(() => {
                 type="button"
                 class="toggle-btn"
                 :class="{ 'toggle-btn--on': colorAuxMode === 'hsl' }"
+                :aria-pressed="colorAuxMode === 'hsl'"
                 @click="colorAuxMode = 'hsl'"
               >
                 HSL
@@ -759,6 +785,7 @@ onMounted(() => {
           <div class="row-color">
             <span
               class="swatch"
+              aria-hidden="true"
               :style="{
                 backgroundColor: `rgb(${picked.r},${picked.g},${picked.b})`,
               }"
@@ -952,6 +979,7 @@ onMounted(() => {
             <li v-for="(d, i) in analysis.dominants" :key="i" class="row-dominant">
               <span
                 class="swatch sm"
+                aria-hidden="true"
                 :style="{ backgroundColor: `rgb(${d.r},${d.g},${d.b})` }"
               />
               <div class="dominant-text">
@@ -1017,13 +1045,15 @@ onMounted(() => {
               <div class="row-mini">
                 <span
                   class="swatch xs"
+                  aria-hidden="true"
                   :style="{
                     backgroundColor: `rgb(${m.domR},${m.domG},${m.domB})`,
                   }"
                 />
-                <span class="arrow">→</span>
+                <span class="arrow" aria-hidden="true">→</span>
                 <span
                   class="swatch xs"
+                  aria-hidden="true"
                   :style="{
                     backgroundColor: `rgb(${m.swR},${m.swG},${m.swB})`,
                   }"
@@ -1058,13 +1088,15 @@ onMounted(() => {
               <div class="row-mini">
                 <span
                   class="swatch xs"
+                  aria-hidden="true"
                   :style="{
                     backgroundColor: `rgb(${m.domR},${m.domG},${m.domB})`,
                   }"
                 />
-                <span class="arrow">→</span>
+                <span class="arrow" aria-hidden="true">→</span>
                 <span
                   class="swatch xs"
+                  aria-hidden="true"
                   :style="{
                     backgroundColor: `rgb(${m.swR},${m.swG},${m.swB})`,
                   }"
@@ -1115,6 +1147,7 @@ onMounted(() => {
             >
               <span
                 class="swatch xs"
+                aria-hidden="true"
                 :style="{ backgroundColor: t.hex }"
               />
               <div class="theory-row-text">
@@ -1144,20 +1177,21 @@ onMounted(() => {
               {{ line }}
             </li>
           </ul>
-          <ul class="harmony-list">
+          <ul class="harmony-list" aria-label="色相調和スコアの一覧">
             <li
               v-for="h in analysis.harmonyScores"
               :key="h.id"
               class="harmony-row"
+              :aria-label="`${h.labelJa}、スコア ${(h.score * 100).toFixed(0)} パーセント`"
             >
-              <span class="harmony-label">{{ h.labelJa }}</span>
+              <span class="harmony-label" aria-hidden="true">{{ h.labelJa }}</span>
               <span class="harmony-bar-wrap" aria-hidden="true">
                 <span
                   class="harmony-bar"
                   :style="{ width: `${Math.round(h.score * 100)}%` }"
                 />
               </span>
-              <span class="mono harmony-val">{{
+              <span class="mono harmony-val" aria-hidden="true">{{
                 (h.score * 100).toFixed(0)
               }}%</span>
             </li>
@@ -1263,6 +1297,7 @@ onMounted(() => {
               v-for="e in pickerPalette.slice(0, 16)"
               :key="e.id"
               class="swatch sm empty-palette-swatch"
+              aria-hidden="true"
               :title="e.hex"
               :style="{ backgroundColor: `rgb(${e.r},${e.g},${e.b})` }"
             />
@@ -1327,8 +1362,17 @@ onMounted(() => {
         </div>
       </div>
     </div>
+    </main>
 
-    <div v-if="toast" class="toast">{{ toast }}</div>
+    <div
+      v-if="toast"
+      class="toast"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      {{ toast }}
+    </div>
 
     <GlossaryModal
       :open="glossaryOpen"
@@ -1385,7 +1429,7 @@ onMounted(() => {
 .header-mark {
   width: 2.5rem;
   height: 2.5rem;
-  margin-top: 0.15rem;
+  margin-top: 0.1rem;
   flex-shrink: 0;
   border-radius: 12px;
   background: conic-gradient(
@@ -1435,15 +1479,12 @@ onMounted(() => {
   line-height: 1.2;
 }
 
-.subtitle {
-  margin: 0.35rem 0 0;
-}
-
-.subtitle-lead {
-  font-size: 0.9375rem;
-  line-height: 1.45;
-  font-weight: 500;
-  opacity: 0.96;
+.app-main {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .toolbar {
@@ -1503,6 +1544,12 @@ onMounted(() => {
 
 .json-export-fold[open] > .json-export-summary::before {
   transform: rotate(90deg);
+}
+
+.json-export-summary:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 .json-export-pre {
@@ -1674,6 +1721,11 @@ onMounted(() => {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
 }
 
+.preview-img:focus-visible {
+  outline: 3px solid var(--link);
+  outline-offset: 3px;
+}
+
 .hint {
   margin: 0.5rem 0 0;
   font-size: 1rem;
@@ -1751,6 +1803,12 @@ onMounted(() => {
 
 .toggle-btn:hover:not(.toggle-btn--on) {
   background: var(--surface);
+}
+
+.toggle-btn:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+  z-index: 1;
 }
 
 .row-dominant {
@@ -1904,6 +1962,12 @@ onMounted(() => {
   text-decoration: none;
 }
 
+.linkish:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
 .linkish-danger {
   color: var(--danger);
 }
@@ -1986,7 +2050,7 @@ onMounted(() => {
   color: #aaa;
 }
 
-.palette-label-input:focus {
+.palette-label-input:focus-visible {
   outline: 2px solid var(--link);
   outline-offset: 0;
   border-color: transparent;
@@ -2012,6 +2076,11 @@ onMounted(() => {
 .palette-chip-remove:hover {
   background: #fff0f0;
   color: var(--danger);
+}
+
+.palette-chip-remove:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
 }
 
 .palette-empty-hint {
@@ -2053,6 +2122,11 @@ onMounted(() => {
   transform: rotate(90deg);
 }
 
+.palette-details-summary:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: -2px;
+}
+
 .palette-details-body {
   margin: 0;
   padding: 0 0.65rem 0.55rem;
@@ -2092,6 +2166,11 @@ onMounted(() => {
 .palette-tool-btn:hover:not(:disabled) {
   background: #f4f4f8;
   border-color: #a8a8b8;
+}
+
+.palette-tool-btn:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
 }
 
 .palette-tool-btn:disabled {
@@ -2164,6 +2243,11 @@ onMounted(() => {
   background: #e8efff;
 }
 
+.glossary-jump:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+}
+
 .btn-palette-add {
   margin-top: 0.5rem;
   align-self: flex-start;
@@ -2183,6 +2267,11 @@ onMounted(() => {
 .btn-palette-add:hover {
   background: #f4f3fa;
   border-color: #a8a4c0;
+}
+
+.btn-palette-add:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
 }
 
 .palette-draft-wrap {
@@ -2216,7 +2305,7 @@ onMounted(() => {
   color: #9a9aa8;
 }
 
-.palette-draft-input:focus {
+.palette-draft-input:focus-visible {
   outline: 2px solid var(--link);
   outline-offset: 1px;
   border-color: transparent;
@@ -2237,6 +2326,11 @@ onMounted(() => {
   color: var(--danger);
   border-color: #e0b4b4;
   background: #fff8f8;
+}
+
+.btn-palette-remove:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
 }
 
 .palette-actions {
@@ -2378,6 +2472,12 @@ onMounted(() => {
 
 details[open] > .fold-summary::before {
   transform: rotate(90deg);
+}
+
+.fold-summary:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 .fold-disclaimer {

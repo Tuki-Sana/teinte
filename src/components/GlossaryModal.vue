@@ -177,6 +177,11 @@ onUnmounted(() => {
   background: var(--bg, #f8f8fa);
 }
 
+.btn-close:focus-visible {
+  outline: 2px solid var(--link, #2563eb);
+  outline-offset: 2px;
+}
+
 .glossary-toc-fold {
   flex-shrink: 0;
   border-bottom: 1px solid var(--stroke, #e0e0e6);
