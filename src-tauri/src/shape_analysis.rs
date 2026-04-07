@@ -19,7 +19,7 @@ use base64::Engine;
 use image::{GenericImageView, GrayImage, ImageFormat, Luma, RgbImage};
 use imageproc::edges::canny;
 use imageproc::distance_transform::Norm;
-use imageproc::morphology::dilate;
+use imageproc::morphology::{dilate, erode};
 use imageproc::region_labelling::{connected_components, Connectivity};
 use serde::Serialize;
 
@@ -27,12 +27,16 @@ use serde::Serialize;
 const SHAPE_MAX_SIDE: u32 = 700;
 
 /// Canny エッジ検出の閾値（低/高）。
-const CANNY_LOW: f32 = 12.0;
-const CANNY_HIGH: f32 = 35.0;
+/// 低めに設定することで雲のようなグラデーション境界も検出する。
+const CANNY_LOW: f32 = 5.0;
+const CANNY_HIGH: f32 = 15.0;
 
-/// エッジ膨張の半径（px）。大きいほど輪郭の隙間を塞ぎやすいが、細かいシェイプが潰れる。
-/// 700px 画像では 10px 程度が雲・イラスト・写真に対してバランスが良い。
-const DILATION_RADIUS: u8 = 10;
+/// エッジ膨張の半径（px）。輪郭の隙間を塞ぐ。
+const DILATION_RADIUS: u8 = 12;
+
+/// ポジティブマップへの後処理クロージング（dilate→erode）の半径（px）。
+/// 近傍フラグメントを繋いで小さな穴を埋める。
+const POST_CLOSE_RADIUS: u8 = 6;
 
 #[derive(Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -166,12 +170,26 @@ pub fn analyze_shape_path(path_str: &str) -> Result<ShapeAnalysisDto, String> {
         })
         .collect();
 
+    // 後処理クロージング（dilate → erode）: 近傍フラグメントを繋ぎ、小さな穴を埋める
+    let raw_stark = build_stark(&positive_map, pw, ph);
+    let closed_stark = erode(
+        &dilate(&raw_stark, Norm::LInf, POST_CLOSE_RADIUS),
+        Norm::LInf,
+        POST_CLOSE_RADIUS,
+    );
+
+    // クロージング済みマップで面積を再計算
+    let positive_map: Vec<bool> = closed_stark
+        .pixels()
+        .map(|p| p[0] > 0)
+        .collect();
+
     let positive_count = positive_map.iter().filter(|&&v| v).count() as f32;
     let positive_area_pct = 100.0 * positive_count / total;
     let negative_area_pct = 100.0 - positive_area_pct;
 
-    // ポジティブ領域の連結成分数を再カウント（スタークビュー画像から）
-    let stark_img = build_stark(&positive_map, pw, ph);
+    // ポジティブ領域の連結成分数を再カウント（クロージング後のスタークビューから）
+    let stark_img = closed_stark;
     let labeled_pos = connected_components(&stark_img, Connectivity::Eight, Luma([0u8]));
     let region_count = labeled_pos.pixels().map(|p| p[0]).max().unwrap_or(0);
 
