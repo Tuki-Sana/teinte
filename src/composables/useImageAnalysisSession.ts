@@ -6,6 +6,32 @@ import { parseAnalysisExportJson } from "../utils/analysisImport";
 import { buildPdfFromElement } from "../utils/pdfExport";
 import { readJsonTextFileDialog } from "../utils/readJsonTextFileDialog";
 
+/** host 内の全 img 要素が読み込まれるまで待つ。タイムアウト ms を超えたら強行する */
+function waitForHostImages(host: HTMLElement, timeoutMs = 3000): Promise<void> {
+  return new Promise((resolve) => {
+    const timer = window.setTimeout(resolve, timeoutMs);
+    const imgs = Array.from(host.querySelectorAll("img"));
+    const pending = imgs.filter((img) => !img.complete);
+    if (pending.length === 0) {
+      clearTimeout(timer);
+      resolve();
+      return;
+    }
+    let settled = 0;
+    const onSettle = () => {
+      settled += 1;
+      if (settled >= pending.length) {
+        clearTimeout(timer);
+        resolve();
+      }
+    };
+    for (const img of pending) {
+      img.addEventListener("load", onSettle, { once: true });
+      img.addEventListener("error", onSettle, { once: true });
+    }
+  });
+}
+
 function buildExportObject(a: Analysis) {
   const { previewJpegBase64: _omit, ...rest } = a;
   return {
@@ -173,26 +199,11 @@ export function useImageAnalysisSession(options: {
     pdfExportMount.value = true;
     await nextTick();
 
-    await new Promise<void>((resolve) => {
-      const host = pdfHostRef.value;
-      if (!host) {
-        resolve();
-        return;
-      }
-      const img = host.querySelector("img");
-      if (!img?.src) {
-        window.setTimeout(() => resolve(), 250);
-        return;
-      }
-      if (img.complete) {
-        window.setTimeout(() => resolve(), 80);
-        return;
-      }
-      img.onload = () => resolve();
-      img.onerror = () => resolve();
-    });
-
     const host = pdfHostRef.value;
+    if (host) {
+      await waitForHostImages(host);
+    }
+
     if (!host) {
       pdfExportMount.value = false;
       showToast("PDF の準備に失敗しました");

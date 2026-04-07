@@ -45,4 +45,22 @@ describe("parseAnalysisExportJson", () => {
     const res = parseAnalysisExportJson("not-json");
     expect(res.ok).toBe(false);
   });
+
+  it("rejects when dominants is empty even if width/height are valid", () => {
+    const text = JSON.stringify({ width: 100, height: 100, dominants: [] });
+    const res = parseAnalysisExportJson(text);
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.error).toMatch(/支配色/);
+  });
+
+  it("rejects when width is 0 even if dominants exist", () => {
+    const text = JSON.stringify({
+      width: 0,
+      height: 100,
+      dominants: [{ r: 255, g: 0, b: 0, pct: 100, hex: "#FF0000" }],
+    });
+    const res = parseAnalysisExportJson(text);
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.error).toMatch(/幅・高さ/);
+  });
 });

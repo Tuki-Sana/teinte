@@ -201,17 +201,11 @@ export function parseAnalysisExportJson(text: string): ParseAnalysisResult {
     ? (o.tailwindMatches.map(parsePaletteMatch).filter(Boolean) as PaletteMatch[])
     : [];
 
-  if (
-    dominants.length === 0 &&
-    openColorMatches.length === 0 &&
-    tailwindMatches.length === 0 &&
-    width <= 0 &&
-    height <= 0
-  ) {
-    return {
-      ok: false,
-      error: "有効な分析内容がありません（支配色・寸法など）",
-    };
+  if (dominants.length === 0) {
+    return { ok: false, error: "支配色データがありません" };
+  }
+  if (width <= 0 || height <= 0) {
+    return { ok: false, error: "画像の幅・高さが不正です（width/height が必要です）" };
   }
 
   let wcag: WcagDominantPair | null = null;
