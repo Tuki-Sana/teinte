@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import type { Analysis, ShapeAnalysis } from "../types/analysis";
+import type { Analysis, ShapeAnalysis, ShapeAnalysisMode } from "../types/analysis";
 import {
   classifyColorRoles,
   COLOR_ROLE_LABEL,
@@ -16,8 +16,16 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  analyze: [];
+  analyze: [mode: ShapeAnalysisMode];
 }>();
+
+// ---- 分析モード ----
+const analysisMode = ref<ShapeAnalysisMode>("edge");
+
+const ANALYSIS_MODE_LABEL: Record<ShapeAnalysisMode, string> = {
+  edge: "エッジ（輪郭）",
+  color: "色差（背景色）",
+};
 
 // ---- ビュー切り替え ----
 type ViewMode = "stark" | "overlay";
@@ -79,13 +87,35 @@ const ROLE_COLOR: Record<ColorRole, string> = {
   <section class="block shape-panel">
     <h2 class="h">シェイプ分析</h2>
 
+    <!-- 分析モード選択（常時表示） -->
+    <div class="shape-mode-row">
+      <div class="toggle" role="group" aria-label="分析モード">
+        <button
+          v-for="m in (['edge', 'color'] as ShapeAnalysisMode[])"
+          :key="m"
+          type="button"
+          class="toggle-btn"
+          :class="{ 'toggle-btn--on': analysisMode === m }"
+          :aria-pressed="analysisMode === m"
+          @click="analysisMode = m"
+        >
+          {{ ANALYSIS_MODE_LABEL[m] }}
+        </button>
+      </div>
+    </div>
+    <p class="muted small shape-mode-hint">
+      <template v-if="analysisMode === 'edge'">
+        輪郭で閉じた領域を検出。線画・イラスト・低コントラスト画像向き。
+      </template>
+      <template v-else>
+        四隅の色を背景と推定し色差で分類。空・壁など均一な背景の写真向き。
+      </template>
+    </p>
+
     <!-- 未実行状態 -->
     <template v-if="!shapeAnalysis && !shapeLoading">
-      <p class="muted small shape-lead">
-        エッジ密度から画像内の「モノがある領域（ポジティブ）」と「余白（ネガティブ）」を推定します。
-      </p>
       <p v-if="shapeError" class="shape-error small">{{ shapeError }}</p>
-      <button type="button" class="btn-analyze" @click="emit('analyze')">
+      <button type="button" class="btn-analyze" @click="emit('analyze', analysisMode)">
         シェイプ分析を実行
       </button>
     </template>
@@ -123,7 +153,7 @@ const ROLE_COLOR: Record<ColorRole, string> = {
         <button
           type="button"
           class="linkish linkish-tiny shape-rerun"
-          @click="emit('analyze')"
+          @click="emit('analyze', analysisMode)"
         >
           再実行
         </button>
@@ -242,6 +272,15 @@ const ROLE_COLOR: Record<ColorRole, string> = {
   border-top: 1px solid var(--stroke);
   padding-top: 1.1rem;
   margin-top: 0.25rem;
+}
+
+.shape-mode-row {
+  margin-bottom: 0.4rem;
+}
+
+.shape-mode-hint {
+  margin: 0 0 0.75rem;
+  line-height: 1.5;
 }
 
 .shape-lead {

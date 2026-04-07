@@ -48,7 +48,7 @@ const emit = defineEmits<{
   copyPickerPaletteJson: [];
   savePickerPaletteJson: [];
   clearPickerPalette: [];
-  analyzeShape: [];
+  analyzeShape: [mode: string];
 }>();
 
 function gistRowClass(role: string): string {
@@ -595,7 +595,7 @@ function gistRowClass(role: string): string {
       :shape-analysis="props.shapeAnalysis"
       :shape-loading="props.shapeLoading"
       :shape-error="props.shapeError"
-      @analyze="emit('analyzeShape')"
+      @analyze="(mode) => emit('analyzeShape', mode)"
     />
 
     <details class="block json-export-fold">

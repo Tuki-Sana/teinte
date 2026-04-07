@@ -160,7 +160,7 @@ onMounted(() => {
           @copy-picker-palette-json="copyPickerPaletteJson"
           @save-picker-palette-json="savePickerPaletteJson"
           @clear-picker-palette="clearPickerPalette"
-          @analyze-shape="analyzeShape(analysis.path)"
+          @analyze-shape="(mode) => analysis && analyzeShape(analysis.path, mode as 'edge' | 'color')"
         />
       </div>
     </div>

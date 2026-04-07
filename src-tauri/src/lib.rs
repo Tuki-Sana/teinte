@@ -48,8 +48,8 @@ fn read_text_file(path: String) -> Result<String, String> {
 }
 
 #[tauri::command]
-fn analyze_shape(path: String) -> Result<shape_analysis::ShapeAnalysisDto, String> {
-    shape_analysis::analyze_shape_path(&path)
+fn analyze_shape(path: String, mode: String) -> Result<shape_analysis::ShapeAnalysisDto, String> {
+    shape_analysis::analyze_shape_path(&path, &mode)
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
