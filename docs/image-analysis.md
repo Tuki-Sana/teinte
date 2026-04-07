@@ -104,7 +104,22 @@ Rust の `Analysis` フィールド名は **`schema_version`** ですが、`#[se
 
 ---
 
-## 11. 限界・読み方の注意（要約）
+## 11. 配色の役割分類（フロントのみ・Rust なし）
+
+[`src/utils/colorRole.ts`](../src/utils/colorRole.ts) の `classifyColorRoles` で行います。Rust を介さず、支配色（`Dominant[]`）の `pct` だけを使うフロント計算です。
+
+- 支配色を `pct` 降順（すでにソート済み）に走査し、**累積 pct** を加算します。
+- 累積が `baseCutoff`（デフォルト **70%**）以下の色 → **ベース**
+- 累積が `accentCutoff`（デフォルト **95%**）以下の色 → **アソート**
+- それ以降 → **アクセント**
+
+UI では各色の**個別 `pct`**（そのクラスタのサンプル割合）と**累積 `pct`**（しきい値との対応が見える）を並記します。しきい値はスライダーで変更でき、`baseCutoff + 5 ≤ accentCutoff` の整合性をチェックしています。
+
+**注意**: `pct` は §3 の「間引きサンプル上の割合（目安）」です。役割分類はこの近似値をそのまま使うため、厳密な面積率ではありません。
+
+---
+
+## 12. 限界・読み方の注意（要約）  <!-- 旧 §11 -->
 
 - **支配色**は Lab k-means＋間引きによる **クラスタ代表**であり、厳密な「面積率の最適分割」ではない。**表示の %** は **間引きサンプル上の割合**（§3）。
 - **PCCS 風・色相帯**は **学習・ラベル用の近似**。
@@ -114,7 +129,7 @@ Rust の `Analysis` フィールド名は **`schema_version`** ですが、`#[se
 
 ---
 
-## 12. PDF レポート（`PdfExportSurface.vue`）
+## 13. PDF レポート（`PdfExportSurface.vue`）
 
 フロントの **`PdfExportSurface.vue`** を **html2canvas** でラスタ化し、**jsPDF** で PDF 化したうえで、Rust の `save_binary_file`（`invoke`）で保存します（詳細は [architecture.md](./architecture.md)）。
 

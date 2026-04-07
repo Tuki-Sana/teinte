@@ -93,21 +93,6 @@ export interface Analysis {
   gist: AnalysisGist;
 }
 
-export type ShapeAnalysisMode = "edge" | "color";
-
-export interface ShapeAnalysis {
-  positiveAreaPct: number;
-  negativeAreaPct: number;
-  edgeDensity: number;
-  regionCount: number;
-  complexityJa: string;
-  starkBase64: string;
-  overlayBase64: string;
-  procWidth: number;
-  procHeight: number;
-  mode: ShapeAnalysisMode;
-}
-
 export interface PixelSample {
   r: number;
   g: number;

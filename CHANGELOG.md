@@ -4,9 +4,22 @@
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-04-07
+
+マイナー相当。**分析 JSON の `schemaVersion`（4）・パレット LocalStorage スキーマ（1）・解析アルゴリズム**に変更はありません。
+
+### Added
+
+- **配色の役割分類**（[`src/utils/colorRole.ts`](src/utils/colorRole.ts)）: 支配色の累積面積比をもとに**ベース / アソート / アクセント**を分類（デフォルトしきい値 70 / 95）。`AnalysisSidePanel` に統合し、スライダーでしきい値を調整可能。各色の**個別 %** と**累積 %**（しきい値との関係を示す）を並記
+- **リリースワークフロー**（[`.github/workflows/release.yml`](.github/workflows/release.yml)）: `v*` タグのプッシュで macOS（Apple Silicon / Intel）・Windows の成果物を自動ビルドし GitHub Releases に下書きで作成
+
+### Removed
+
+- **シェイプ分析**（ポジティブ / ネガティブシェイプ可視化）: 画像処理のみでは実写・複雑背景に対して精度が低く利用価値が限定的と判断し削除。`shape_analysis.rs`（Rust）・`ShapeAnalysisPanel.vue`・`useShapeAnalysis.ts`（フロント）を除去、`imageproc` 依存も削除
+
 ### Documentation
 
-- [README](README.md): **配布ビルドと GitHub Releases**（成果物の場所、`CI=false` が必要な場合、Linux は別 OS／CI でのビルド）を追記
+- [README](README.md): リリースワークフローの使い方・macOS 初回起動時の「開発元を確認できません」回避手順（右クリック → 開く）を追記
 
 ## [0.2.2] - 2026-04-08
 

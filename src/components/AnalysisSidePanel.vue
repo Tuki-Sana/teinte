@@ -1,9 +1,15 @@
 <script setup lang="ts">
+import { ref, computed } from "vue";
 import { harmonyScoreLegendLines } from "../constants/harmonyScoreLegend";
-import type { Analysis, PickerPaletteEntry, PixelSample, ShapeAnalysis } from "../types/analysis";
+import type { Analysis, PickerPaletteEntry, PixelSample } from "../types/analysis";
 import type { ColorAuxMode } from "../utils/colorFormat";
-import ShapeAnalysisPanel from "./ShapeAnalysisPanel.vue";
 import { formatAuxColor } from "../utils/colorFormat";
+import {
+  classifyColorRoles,
+  COLOR_ROLE_LABEL,
+  DEFAULT_COLOR_ROLE_THRESHOLDS,
+  type ColorRole,
+} from "../utils/colorRole";
 import {
   PICKER_LABEL_MAX,
   PICKER_PALETTE_MAX,
@@ -20,9 +26,6 @@ const props = defineProps<{
   activePaletteSet: PickerPaletteSet;
   canDeletePaletteSet: boolean;
   pickerPalette: PickerPaletteEntry[];
-  shapeAnalysis: ShapeAnalysis | null;
-  shapeLoading: boolean;
-  shapeError: string;
 }>();
 
 const colorAuxMode = defineModel<ColorAuxMode>("colorAuxMode", { required: true });
@@ -48,8 +51,41 @@ const emit = defineEmits<{
   copyPickerPaletteJson: [];
   savePickerPaletteJson: [];
   clearPickerPalette: [];
-  analyzeShape: [mode: string];
 }>();
+
+// ---- 配色ロール分類 ----
+const baseCutoff = ref(DEFAULT_COLOR_ROLE_THRESHOLDS.baseCutoff);
+const accentCutoff = ref(DEFAULT_COLOR_ROLE_THRESHOLDS.accentCutoff);
+
+function onBaseCutoffChange(val: number) {
+  baseCutoff.value = val;
+  if (accentCutoff.value <= val + 5) {
+    accentCutoff.value = Math.min(99, val + 5);
+  }
+}
+function onAccentCutoffChange(val: number) {
+  accentCutoff.value = val;
+  if (baseCutoff.value >= val - 5) {
+    baseCutoff.value = Math.max(1, val - 5);
+  }
+}
+function resetThresholds() {
+  baseCutoff.value = DEFAULT_COLOR_ROLE_THRESHOLDS.baseCutoff;
+  accentCutoff.value = DEFAULT_COLOR_ROLE_THRESHOLDS.accentCutoff;
+}
+
+const classifiedColors = computed(() =>
+  classifyColorRoles(props.analysis.dominants, {
+    baseCutoff: baseCutoff.value,
+    accentCutoff: accentCutoff.value,
+  }),
+);
+
+const ROLE_COLOR: Record<ColorRole, string> = {
+  base: "#2563eb",
+  assort: "#16a34a",
+  accent: "#dc2626",
+};
 
 function gistRowClass(role: string): string {
   const parts = ["gist-line"];
@@ -590,13 +626,64 @@ function gistRowClass(role: string): string {
       </dl>
     </section>
 
-    <ShapeAnalysisPanel
-      :analysis="props.analysis"
-      :shape-analysis="props.shapeAnalysis"
-      :shape-loading="props.shapeLoading"
-      :shape-error="props.shapeError"
-      @analyze="(mode) => emit('analyzeShape', mode)"
-    />
+    <section v-if="props.analysis.dominants.length" class="block color-role-section">
+      <h2 class="h">配色の役割分類</h2>
+      <p class="muted small block-lead">
+        支配色の面積比をもとに、ベース / アソート / アクセントを分類します。
+      </p>
+      <div class="role-sliders">
+        <label class="role-slider-label">
+          <span class="role-slider-name" :style="{ color: ROLE_COLOR.base }">ベース上限</span>
+          <input
+            type="range"
+            min="5"
+            max="90"
+            step="1"
+            :value="baseCutoff"
+            class="role-slider"
+            :aria-label="`ベース上限 ${baseCutoff}%`"
+            @input="onBaseCutoffChange(Number(($event.target as HTMLInputElement).value))"
+          />
+          <span class="role-slider-val">{{ baseCutoff }}%</span>
+        </label>
+        <label class="role-slider-label">
+          <span class="role-slider-name" :style="{ color: ROLE_COLOR.accent }">アクセント開始</span>
+          <input
+            type="range"
+            min="10"
+            max="99"
+            step="1"
+            :value="accentCutoff"
+            class="role-slider"
+            :aria-label="`アクセント開始 ${accentCutoff}%`"
+            @input="onAccentCutoffChange(Number(($event.target as HTMLInputElement).value))"
+          />
+          <span class="role-slider-val">{{ accentCutoff }}%</span>
+        </label>
+        <button
+          type="button"
+          class="linkish linkish-tiny role-reset"
+          :disabled="baseCutoff === DEFAULT_COLOR_ROLE_THRESHOLDS.baseCutoff && accentCutoff === DEFAULT_COLOR_ROLE_THRESHOLDS.accentCutoff"
+          @click="resetThresholds"
+        >
+          デフォルト（70 / 95）に戻す
+        </button>
+      </div>
+      <ul class="role-list" aria-label="配色役割一覧">
+        <li v-for="d in classifiedColors" :key="d.hex" class="role-row">
+          <span class="swatch xs" aria-hidden="true" :style="{ backgroundColor: d.hex }" />
+          <span
+            class="role-badge"
+            :style="{ color: ROLE_COLOR[d.role], borderColor: ROLE_COLOR[d.role] }"
+          >{{ COLOR_ROLE_LABEL[d.role] }}</span>
+          <span class="role-hex mono small">{{ d.hex }}</span>
+          <span class="role-pct-wrap">
+            <span class="mono small">{{ d.pct.toFixed(1) }}%</span>
+            <span class="muted role-cum">累 {{ d.cumulativePct.toFixed(1) }}%</span>
+          </span>
+        </li>
+      </ul>
+    </section>
 
     <details class="block json-export-fold">
       <summary class="json-export-summary">
@@ -606,3 +693,90 @@ function gistRowClass(role: string): string {
     </details>
   </aside>
 </template>
+
+<style scoped>
+.color-role-section {
+  border-top: 1px solid var(--stroke);
+}
+
+.role-sliders {
+  margin: 0.65rem 0 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.role-slider-label {
+  display: grid;
+  grid-template-columns: 6rem 1fr 2.5rem;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.role-slider-name {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.role-slider {
+  width: 100%;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.role-slider-val {
+  text-align: right;
+  font-size: 0.875rem;
+  color: var(--muted);
+  font-family: ui-monospace, monospace;
+}
+
+.role-reset {
+  align-self: flex-start;
+  font-size: 0.8125rem;
+}
+
+.role-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.role-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.role-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  border: 1px solid currentColor;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.role-hex {
+  flex: 1;
+  min-width: 0;
+}
+
+.role-pct-wrap {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.3;
+}
+
+.role-cum {
+  font-size: 0.7rem;
+  font-family: ui-monospace, monospace;
+}
+</style>

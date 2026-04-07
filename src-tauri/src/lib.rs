@@ -3,7 +3,6 @@ mod color_theory;
 mod harmony;
 mod meta;
 mod palette_match;
-mod shape_analysis;
 mod theory;
 
 use serde::Serialize;
@@ -47,11 +46,6 @@ fn read_text_file(path: String) -> Result<String, String> {
     std::fs::read_to_string(path).map_err(|e| e.to_string())
 }
 
-#[tauri::command]
-fn analyze_shape(path: String, mode: String) -> Result<shape_analysis::ShapeAnalysisDto, String> {
-    shape_analysis::analyze_shape_path(&path, &mode)
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -63,7 +57,6 @@ pub fn run() {
             save_text_file,
             save_binary_file,
             read_text_file,
-            analyze_shape,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
