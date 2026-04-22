@@ -65,8 +65,12 @@ jobs:
             - **macOS（Intel）**: ファイル名に **`x64`** が付いた `.dmg`（CPU はファイル名で区別）
             - **Windows**: **`x64-setup.exe`** または **`x64_en-US.msi`**
 
-            ### macOS で「開発元を確認できません」と表示されるとき
-            Apple Developer による公証・署名は行っていないため、初回起動時にブロックされることがあります。**アプリを右クリック →「開く」**から起動するか、**システム設定 → プライバシーとセキュリティ**で許可してください。
+            ### macOS で「壊れている」または「開発元を確認できません」と表示されるとき
+            Apple Developer による公証・署名は行っていないため、初回起動時にブロックされることがあります。ターミナルで以下を実行してから起動してください。
+            ```
+            xattr -d com.apple.quarantine /Applications/Teinte.app
+            ```
+            または**アプリを右クリック →「開く」**から起動できる場合もあります。
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.tauri_args }}
