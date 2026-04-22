@@ -4,6 +4,19 @@
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-04-22
+
+パッチ相当。**分析 JSON の `schemaVersion`（4）・パレット LocalStorage スキーマ（1）・解析アルゴリズム・UI**に変更はありません。
+
+### Fixed
+
+- **localStorage キーを `teinte.*` に改称**（旧: `imageMetadataAnalyzer.*`）。起動時に旧キーのデータを新キーへ自動移行し旧キーを削除（パレット・カラー補助モードとも）
+
+### Documentation
+
+- [README](README.md): バージョン表記・CI 説明・タグ例・localStorage キー名を更新
+- [docs/architecture.md](docs/architecture.md): アプリ名・ディレクトリツリー・localStorage キー名を更新
+
 ## [0.4.1] - 2026-04-22
 
 パッチ相当。**分析 JSON の `schemaVersion`（4）・パレット LocalStorage スキーマ（1）・解析アルゴリズム・UI**に変更はありません。
