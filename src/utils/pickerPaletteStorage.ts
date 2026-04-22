@@ -1,6 +1,7 @@
 import type { PickerPaletteEntry } from "../types/analysis";
 
-const LS_KEY = "imageMetadataAnalyzer.pickerPalette";
+const LS_KEY = "teinte.pickerPalette";
+const LS_KEY_LEGACY = "imageMetadataAnalyzer.pickerPalette";
 export const PICKER_PALETTE_MAX = 48;
 /** ラベル文字数の上限（LocalStorage・UI 共通） */
 export const PICKER_LABEL_MAX = 48;
@@ -132,7 +133,14 @@ export function getActivePaletteIndex(root: PickerPalettesState): number {
 
 export function loadPickerPalettesState(): PickerPalettesState {
   try {
-    const raw = localStorage.getItem(LS_KEY);
+    const raw = localStorage.getItem(LS_KEY) ?? (() => {
+      const legacy = localStorage.getItem(LS_KEY_LEGACY);
+      if (legacy) {
+        localStorage.setItem(LS_KEY, legacy);
+        localStorage.removeItem(LS_KEY_LEGACY);
+      }
+      return legacy;
+    })();
     if (!raw) return createDefaultPickerPalettesState();
     const parsed: unknown = JSON.parse(raw);
     return parsePickerPalettesPersistedJson(parsed);
