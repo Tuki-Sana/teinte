@@ -15,6 +15,7 @@
 ### Documentation
 
 - [README](README.md): バージョン表記を 0.4.0 に更新
+- [docs/release-notes-v0.4.0.md](docs/release-notes-v0.4.0.md): GitHub Releases 本文用のマークダウン下書きを追加
 
 ## [0.3.0] - 2026-04-07
 
