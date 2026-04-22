@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-04-22
+
+パッチ相当。**分析 JSON の `schemaVersion`（4）・パレット LocalStorage スキーマ（1）・解析アルゴリズム・UI**に変更はありません。
+
+### Changed
+
+- **アプリ・リポジトリ名を `Teinte` に改称**（旧: `image-metadata-tool-tauri`）。Rust クレート名（`teinte_lib`）・GitHub リモート URL を合わせて更新
+- **CI**（[`.github/workflows/ci.yml`](.github/workflows/ci.yml)）: macOS（Apple Silicon）の Tauri ビルドジョブを追加
+
 ## [0.4.0] - 2026-04-14
 
 マイナー相当。**分析 JSON の `schemaVersion`（4）・パレット LocalStorage スキーマ（1）・解析アルゴリズム**に変更はありません。
